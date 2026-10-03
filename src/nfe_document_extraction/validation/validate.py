@@ -134,10 +134,11 @@ def _person_document_failure(
 
 def _access_key_check_digit(extraction: Extraction) -> RuleReport:
     access_key = extraction.header.access_key
+    parts = parse_access_key(access_key)
     expected = access_key_check_digit(access_key)
-    if expected is None:
+    if parts is None or expected is None:
         message = "Access key must contain 44 digits."
-    elif access_key[43] != expected:
+    elif parts.check_digit != expected:
         message = "Access key check digit does not match."
     else:
         message = None
@@ -157,7 +158,7 @@ def _access_key_cross_consistency(extraction: Extraction) -> RuleReport:
             (
                 _failure(
                     ACCESS_KEY_CROSS_CONSISTENCY,
-                    _CROSS_FIELDS,
+                    _ACCESS_KEY_FIELDS,
                     "Access key must contain 44 digits to compare state, year/month, "
                     "issuer CNPJ, model, series, and number.",
                 ),

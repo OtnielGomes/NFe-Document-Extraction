@@ -171,17 +171,20 @@ def test_access_key_with_bad_check_digit_is_flagged() -> None:
     assert _field(report, "header.series").status is FieldStatus.VERIFIED
 
 
-def test_short_access_key_flags_every_cross_checked_field() -> None:
+def test_short_access_key_flags_only_the_access_key() -> None:
     report = validate(_extraction(access_key="123"))
 
     assert not report.accepted
-    messages = {
-        failure.message for failure in _field(report, "header.access_key").failures
-    }
+    access_key = _field(report, "header.access_key")
+    messages = {failure.message for failure in access_key.failures}
     assert "Access key must contain 44 digits." in messages
     assert any("44 digits to compare" in message for message in messages)
-    assert _field(report, "header.series").status is FieldStatus.FLAGGED
-    assert _field(report, "header.issuer_cnpj").status is FieldStatus.FLAGGED
+    assert all(
+        failure.fields == ("header.access_key",) for failure in access_key.failures
+    )
+    assert _field(report, "header.series").status is FieldStatus.VERIFIED
+    assert _field(report, "header.issue_date").status is FieldStatus.VERIFIED
+    assert _field(report, "header.issuer_cnpj").status is FieldStatus.VERIFIED
 
 
 @pytest.mark.parametrize(
