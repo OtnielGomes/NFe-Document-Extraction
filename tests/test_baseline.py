@@ -1,0 +1,262 @@
+"""Single-call baseline: strict schema, repository prompt, extraction errors."""
+
+from datetime import date
+from decimal import Decimal
+from pathlib import Path
+
+from openai.lib._parsing import type_to_response_format_param
+from test_identifier_rules import (
+    ACCESS_KEY,
+    ISSUER_CNPJ,
+    RECIPIENT_CPF,
+    _extraction,
+)
+
+from nfe_document_extraction.agents.baseline import (
+    extract_baseline,
+    interpret_baseline_output,
+)
+from nfe_document_extraction.agents.config import load_baseline_config
+from nfe_document_extraction.agents.schema import (
+    BaselinePayload,
+    HeaderPayload,
+    LineItemPayload,
+    UnsupportedPayload,
+)
+from nfe_document_extraction.evaluation import ExtractionFailure
+from nfe_document_extraction.evaluation.dataset import load_synthetic_pdfs
+from nfe_document_extraction.evaluation.judge import judge_reading
+
+_PDF = (
+    Path(__file__).resolve().parents[1]
+    / "data"
+    / "synthetic"
+    / "synthetic-001"
+    / "danfe.pdf"
+)
+_AS_OF = date(2026, 10, 3)
+
+
+class _UsageDetails:
+    cached_tokens = 4
+
+
+class _Usage:
+    input_tokens = 20
+    output_tokens = 5
+    input_tokens_details = _UsageDetails()
+
+
+class _Refusal:
+    type = "refusal"
+    refusal = "I will not read this document."
+
+
+class _Message:
+    type = "message"
+    content = (_Refusal(),)
+
+
+class _Response:
+    output_parsed = None
+    output = (_Message(),)
+    usage = _Usage()
+
+
+class _Responses:
+    def __init__(self, response: object) -> None:
+        self.response = response
+        self.kwargs: dict[str, object] = {}
+
+    def parse(self, **kwargs: object) -> object:
+        self.kwargs = kwargs
+        if self.response is None:
+            BaselinePayload.model_validate({})
+        return self.response
+
+
+class _Client:
+    def __init__(self, response: object) -> None:
+        self.responses = _Responses(response)
+
+
+def test_structured_output_schema_is_strict() -> None:
+    schema = type_to_response_format_param(BaselinePayload)
+
+    assert schema["type"] == "json_schema"
+    assert schema["json_schema"]["strict"] is True
+    body = schema["json_schema"]["schema"]
+    assert body["additionalProperties"] is False
+    assert body["required"] == ["header", "line_items"]
+    for name in ("HeaderPayload", "LineItemPayload", "UnsupportedPayload"):
+        assert body["$defs"][name]["additionalProperties"] is False
+
+
+def test_printed_payload_normalizes_into_an_extraction() -> None:
+    payload = BaselinePayload(
+        header=HeaderPayload(
+            access_key=ACCESS_KEY,
+            state="sp",
+            model="55",
+            series="1",
+            number="123",
+            issue_date="03/10/2024",
+            issuer_cnpj="00.000.000/0001-91",
+            recipient_cnpj_cpf="529.982.247-25",
+            total_products="10,00",
+            freight="0,00",
+            insurance="0",
+            discount="0",
+            ipi_total="0",
+            other_expenses="0",
+            icms_total="0",
+            icms_st_total="1,80",
+            invoice_total="11,80",
+            unsupported_components=UnsupportedPayload(
+                import_tax=False,
+                returned_ipi=False,
+                icms_relief=False,
+                fcp_st=False,
+            ),
+        ),
+        line_items=[
+            LineItemPayload(
+                printed_order=1,
+                product_code=" sku-1 ",
+                description=" Café ",
+                ncm="84833090",
+                cfop="5102",
+                quantity="1,2500",
+                unit_price="8,00",
+                item_total="10,00",
+            )
+        ],
+    )
+
+    extraction, failure = interpret_baseline_output(payload, None)
+
+    assert failure is None
+    assert extraction is not None
+    assert extraction.header.state == "SP"
+    assert extraction.header.issuer_cnpj == ISSUER_CNPJ
+    assert extraction.header.recipient_cnpj_cpf == RECIPIENT_CPF
+    assert extraction.header.issue_date == date(2024, 10, 3)
+    assert extraction.header.total_products == 1_000
+    assert extraction.header.icms_st_total == 180
+    assert extraction.header.invoice_total == 1_180
+    assert extraction.line_items[0].product_code == "sku-1"
+    assert extraction.line_items[0].description == "Café"
+    assert extraction.line_items[0].quantity == Decimal("1.2500")
+    assert extraction.line_items[0].item_total == 1_000
+
+
+def test_refusal_is_an_extraction_error() -> None:
+    client = _Client(_Response())
+
+    reading = extract_baseline(client, _PDF.read_bytes())  # type: ignore[arg-type]
+
+    assert reading.extraction is None
+    assert reading.failure is ExtractionFailure.REFUSAL
+    assert reading.input_tokens == 20
+    assert reading.cached_input_tokens == 4
+    assert reading.output_tokens == 5
+    instructions = client.responses.kwargs["instructions"]
+    assert isinstance(instructions, str)
+    assert "DANFE" in instructions
+    assert client.responses.kwargs["model"] == load_baseline_config().model
+    assert client.responses.kwargs["text_format"] is BaselinePayload
+    content = client.responses.kwargs["input"]
+    assert isinstance(content, list)
+    parts = content[0]["content"]
+    assert [part["type"] for part in parts] == [
+        "input_text",
+        "input_image",
+        "input_image",
+    ]
+    assert parts[1]["detail"] == "high"
+
+
+def test_parse_failure_does_not_crash() -> None:
+    client = _Client(None)
+
+    reading = extract_baseline(client, _PDF.read_bytes())  # type: ignore[arg-type]
+
+    assert reading.extraction is None
+    assert reading.failure is ExtractionFailure.PARSE_FAILURE
+
+
+def test_unparsed_output_is_a_parse_failure() -> None:
+    extraction, failure = interpret_baseline_output(None, None)
+
+    assert extraction is None
+    assert failure is ExtractionFailure.PARSE_FAILURE
+
+
+def test_planted_rule_failure_is_detection_not_a_clean_validator_catch() -> None:
+    invoice = _extraction()
+    broken = _extraction(invoice_total=1)
+
+    planted = judge_reading(
+        approach="single-call baseline",
+        rendition="digital PDF",
+        origin="synthetic",
+        ground_truth=invoice,
+        extraction=broken,
+        extraction_failure=None,
+        planted_rule="totals",
+        cost_usd=Decimal("0.01"),
+        latency_seconds=1.5,
+        today=_AS_OF,
+    )
+    clean = judge_reading(
+        approach="single-call baseline",
+        rendition="digital PDF",
+        origin="synthetic",
+        ground_truth=invoice,
+        extraction=broken,
+        extraction_failure=None,
+        planted_rule=None,
+        cost_usd=Decimal("0.01"),
+        latency_seconds=1.5,
+        today=_AS_OF,
+    )
+
+    assert planted.planted_error
+    assert planted.planted_error_detected
+    assert planted.validator_caught_error is False
+    assert clean.planted_error is False
+    assert clean.validator_caught_error
+    assert clean.score is not None
+    assert clean.score.perfect is False
+
+
+def test_failed_extraction_of_a_planted_document_is_not_detected() -> None:
+    judged = judge_reading(
+        approach="single-call baseline",
+        rendition="digital PDF",
+        origin="synthetic",
+        ground_truth=_extraction(),
+        extraction=None,
+        extraction_failure=ExtractionFailure.PARSE_FAILURE,
+        planted_rule="totals",
+        cost_usd=Decimal(0),
+        latency_seconds=0.2,
+        today=_AS_OF,
+    )
+
+    assert judged.score is None
+    assert judged.planted_error_detected is False
+    assert judged.extraction_failure is ExtractionFailure.PARSE_FAILURE
+
+
+def test_synthetic_loader_reads_ground_truth_and_planted_rules() -> None:
+    documents = load_synthetic_pdfs(
+        Path(__file__).resolve().parents[1] / "data" / "synthetic"
+    )
+
+    assert len(documents) == 100
+    assert documents[0].nfe_id == "synthetic-001"
+    assert documents[0].origin == "synthetic"
+    assert documents[0].ground_truth.header.model == "55"
+    assert documents[0].pdf.startswith(b"%PDF")
+    assert sum(document.planted_rule is not None for document in documents) == 15

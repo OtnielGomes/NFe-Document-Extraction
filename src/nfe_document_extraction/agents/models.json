@@ -1,0 +1,8 @@
+{
+  "approach": "single-call baseline",
+  "model": "gpt-4.1-mini-2025-04-14",
+  "pricing_as_of": "2026-10-03",
+  "input_usd_per_million": "0.40",
+  "cached_input_usd_per_million": "0.10",
+  "output_usd_per_million": "1.60"
+}
