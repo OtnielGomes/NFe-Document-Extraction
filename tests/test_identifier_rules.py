@@ -31,6 +31,9 @@ def test_valid_identifiers_are_accepted_and_rules_report_coverage() -> None:
         "cnpj_cpf_check_digit",
         "access_key_check_digit",
         "access_key_cross_consistency",
+        "quantity_times_unit_price",
+        "totals",
+        "ncm_cfop_issue_date",
     )
     assert rules["cnpj_cpf_check_digit"].failures == ()
     assert rules["cnpj_cpf_check_digit"].covered_fields == (
@@ -50,7 +53,7 @@ def test_valid_identifiers_are_accepted_and_rules_report_coverage() -> None:
     verified = {
         field.field for field in report.fields if field.status is FieldStatus.VERIFIED
     }
-    assert verified == {
+    assert {
         "header.access_key",
         "header.state",
         "header.model",
@@ -59,12 +62,7 @@ def test_valid_identifiers_are_accepted_and_rules_report_coverage() -> None:
         "header.issue_date",
         "header.issuer_cnpj",
         "header.recipient_cnpj_cpf",
-    }
-    assert all(
-        field.status is FieldStatus.UNVERIFIABLE
-        for field in report.fields
-        if field.field not in verified
-    )
+    } <= verified
     present = {field.field for field in report.fields}
     assert "header.icms_st_total" in present
     assert "header.unsupported_components.import_tax" in present
@@ -241,6 +239,12 @@ def test_masked_identifiers_dates_and_money_are_normalized() -> None:
         freight="1.234,56",
         insurance=Decimal("0.01"),
         discount="R$ 2,00",
+        invoice_total=124_487,
+        line_items=(
+            _line_item(
+                quantity=Decimal(1), unit_price=Decimal("10.50"), item_total=1_050
+            ),
+        ),
     )
 
     assert document.header.access_key == ACCESS_KEY
@@ -304,7 +308,25 @@ def test_money_rejects_binary_floats() -> None:
         _extraction(total_products=10.5)
 
 
-def _extraction(**overrides: object) -> Extraction:
+def _line_item(**overrides: object) -> LineItem:
+    values: dict[str, object] = {
+        "printed_order": 1,
+        "product_code": "SKU-1",
+        "description": "Plain bearing",
+        "ncm": "84833090",
+        "cfop": "5102",
+        "quantity": Decimal("1.2500"),
+        "unit_price": Decimal("8.00"),
+        "item_total": 1_000,
+    }
+    values.update(overrides)
+    return LineItem.model_validate(values)
+
+
+def _extraction(
+    line_items: tuple[LineItem, ...] | None = None,
+    **overrides: object,
+) -> Extraction:
     values: dict[str, object] = {
         "access_key": ACCESS_KEY,
         "state": "SP",
@@ -322,7 +344,7 @@ def _extraction(**overrides: object) -> Extraction:
         "other_expenses": 0,
         "icms_total": 0,
         "icms_st_total": 180,
-        "invoice_total": 1_000,
+        "invoice_total": 1_180,
         "unsupported_components": {
             "import_tax": False,
             "returned_ipi": False,
@@ -331,21 +353,8 @@ def _extraction(**overrides: object) -> Extraction:
         },
     }
     values.update(overrides)
-    return Extraction(
-        header=Header.model_validate(values),
-        line_items=(
-            LineItem(
-                printed_order=1,
-                product_code="SKU-1",
-                description="Plain bearing",
-                ncm="84833090",
-                cfop="5102",
-                quantity=Decimal("1.2500"),
-                unit_price=Decimal("0.3333333333"),
-                item_total=1_000,
-            ),
-        ),
-    )
+    items = (_line_item(),) if line_items is None else line_items
+    return Extraction(header=Header.model_validate(values), line_items=items)
 
 
 def _field(report: ValidationReport, name: str) -> FieldReport:

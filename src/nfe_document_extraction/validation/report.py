@@ -12,6 +12,12 @@ class FieldStatus(StrEnum):
     FLAGGED = "flagged"
 
 
+class DocumentOutcome(StrEnum):
+    ACCEPTED = "accepted"
+    NEEDS_REPAIR = "needs_repair"
+    HUMAN_REVIEW = "human_review"
+
+
 @dataclass(frozen=True)
 class RuleFailure:
     rule_id: str
@@ -35,6 +41,11 @@ class FieldReport:
 
 @dataclass(frozen=True)
 class ValidationReport:
-    accepted: bool
+    outcome: DocumentOutcome
     rules: tuple[RuleReport, ...]
     fields: tuple[FieldReport, ...]
+    review_messages: tuple[str, ...] = ()
+
+    @property
+    def accepted(self) -> bool:
+        return self.outcome is DocumentOutcome.ACCEPTED
