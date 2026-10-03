@@ -1,29 +1,28 @@
 import sys
 from pathlib import Path
 
-from scripts.check import STEPS, CheckStep, run_checks
+from scripts import check
+from scripts.check import STEPS, CheckStep
 
 
-def test_quality_script_stops_at_the_first_failing_step(capsys) -> None:
-    steps = (
-        CheckStep("format check", ("format",)),
-        CheckStep("lint", ("lint",)),
-        CheckStep("type check", ("type-check",)),
+def test_quality_script_stops_at_the_first_failing_step(capsys, monkeypatch) -> None:
+    monkeypatch.setattr(
+        check,
+        "STEPS",
+        (
+            CheckStep("format check", (sys.executable, "-c", "raise SystemExit(0)")),
+            CheckStep("lint", (sys.executable, "-c", "raise SystemExit(5)")),
+            CheckStep("type check", (sys.executable, "-c", "print('should-not-run')")),
+        ),
     )
-    seen: list[str] = []
 
-    def runner(step: CheckStep) -> int:
-        seen.append(step.name)
-        if step.name == "lint":
-            return 2
-        return 0
-
-    code = run_checks(steps, runner=runner)
+    code = check.main()
 
     captured = capsys.readouterr()
-    assert code == 2
-    assert seen == ["format check", "lint"]
+    assert code == 5
     assert "Quality check failed: lint" in captured.err
+    assert "should-not-run" not in captured.out
+    assert "should-not-run" not in captured.err
 
 
 def test_quality_steps_run_format_lint_types_then_tests() -> None:

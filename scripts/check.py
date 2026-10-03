@@ -5,7 +5,7 @@ from __future__ import annotations
 import os
 import subprocess
 import sys
-from collections.abc import Callable, Sequence
+from collections.abc import Sequence
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -16,14 +16,10 @@ class CheckStep:
     command: tuple[str, ...]
 
 
-Runner = Callable[[CheckStep], int]
-
-
-def run_checks(steps: Sequence[CheckStep], *, runner: Runner | None = None) -> int:
-    execute = runner or _run_command
+def run_checks(steps: Sequence[CheckStep]) -> int:
     for step in steps:
         print(f"==> {step.name}", flush=True)
-        code = execute(step)
+        code = _run_command(step)
         if code != 0:
             print(f"Quality check failed: {step.name}", file=sys.stderr)
             return code
@@ -64,8 +60,12 @@ STEPS: tuple[CheckStep, ...] = (
 
 
 def main() -> int:
+    previous = os.getcwd()
     os.chdir(Path(__file__).resolve().parent.parent)
-    return run_checks(STEPS)
+    try:
+        return run_checks(STEPS)
+    finally:
+        os.chdir(previous)
 
 
 if __name__ == "__main__":
