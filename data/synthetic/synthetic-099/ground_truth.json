@@ -1,0 +1,169 @@
+{
+  "header": {
+    "access_key": "42240107661293770474550030000000991726893447",
+    "state": "SC",
+    "model": "55",
+    "series": "3",
+    "number": "99",
+    "issue_date": "2024-01-16",
+    "issuer_cnpj": "07661293770474",
+    "recipient_cnpj_cpf": "70887516319",
+    "total_products": 1697390,
+    "freight": 0,
+    "insurance": 0,
+    "discount": 0,
+    "ipi_total": 0,
+    "other_expenses": 0,
+    "icms_total": 305531,
+    "icms_st_total": 203687,
+    "invoice_total": 1901077,
+    "unsupported_components": {
+      "import_tax": false,
+      "returned_ipi": false,
+      "icms_relief": false,
+      "fcp_st": false
+    }
+  },
+  "line_items": [
+    {
+      "printed_order": 1,
+      "product_code": "CAM-01",
+      "description": "Camiseta algodao",
+      "ncm": "61091000",
+      "cfop": "5405",
+      "quantity": "9.3452",
+      "unit_price": "199.7464",
+      "item_total": 186667
+    },
+    {
+      "printed_order": 2,
+      "product_code": "CAF-02",
+      "description": "Cafe torrado",
+      "ncm": "09012100",
+      "cfop": "5405",
+      "quantity": "3.7407",
+      "unit_price": "132.7678",
+      "item_total": 49664
+    },
+    {
+      "printed_order": 3,
+      "product_code": "CAD-03",
+      "description": "Caderno brochura",
+      "ncm": "48202000",
+      "cfop": "5405",
+      "quantity": "13.2913",
+      "unit_price": "36.4641",
+      "item_total": 48466
+    },
+    {
+      "printed_order": 4,
+      "product_code": "CAN-04",
+      "description": "Caneta azul",
+      "ncm": "96081000",
+      "cfop": "5405",
+      "quantity": "13.0670",
+      "unit_price": "84.9838",
+      "item_total": 111048
+    },
+    {
+      "printed_order": 5,
+      "product_code": "DET-05",
+      "description": "Detergente neutro",
+      "ncm": "34025000",
+      "cfop": "5405",
+      "quantity": "8.7675",
+      "unit_price": "216.5437",
+      "item_total": 189855
+    },
+    {
+      "printed_order": 6,
+      "product_code": "ARR-06",
+      "description": "Arroz tipo 1",
+      "ncm": "10063021",
+      "cfop": "5405",
+      "quantity": "4.3463",
+      "unit_price": "157.2605",
+      "item_total": 68350
+    },
+    {
+      "printed_order": 7,
+      "product_code": "FEI-07",
+      "description": "Feijao carioca",
+      "ncm": "07133399",
+      "cfop": "5405",
+      "quantity": "6.1679",
+      "unit_price": "148.0144",
+      "item_total": 91294
+    },
+    {
+      "printed_order": 8,
+      "product_code": "LEI-08",
+      "description": "Leite integral",
+      "ncm": "04012010",
+      "cfop": "5405",
+      "quantity": "4.2152",
+      "unit_price": "23.3298",
+      "item_total": 9834
+    },
+    {
+      "printed_order": 9,
+      "product_code": "SAB-09",
+      "description": "Sabonete barra",
+      "ncm": "34011190",
+      "cfop": "5405",
+      "quantity": "2.7928",
+      "unit_price": "177.1504",
+      "item_total": 49475
+    },
+    {
+      "printed_order": 10,
+      "product_code": "PAP-10",
+      "description": "Papel sulfite",
+      "ncm": "48025610",
+      "cfop": "5405",
+      "quantity": "2.3996",
+      "unit_price": "64.9475",
+      "item_total": 15585
+    },
+    {
+      "printed_order": 11,
+      "product_code": "CAM-11",
+      "description": "Camiseta algodao",
+      "ncm": "61091000",
+      "cfop": "5405",
+      "quantity": "18.3655",
+      "unit_price": "129.3279",
+      "item_total": 237517
+    },
+    {
+      "printed_order": 12,
+      "product_code": "CAF-12",
+      "description": "Cafe torrado",
+      "ncm": "09012100",
+      "cfop": "5405",
+      "quantity": "2.1611",
+      "unit_price": "111.1362",
+      "item_total": 24018
+    },
+    {
+      "printed_order": 13,
+      "product_code": "CAD-13",
+      "description": "Caderno brochura",
+      "ncm": "48202000",
+      "cfop": "5405",
+      "quantity": "16.1425",
+      "unit_price": "146.3059",
+      "item_total": 236174
+    },
+    {
+      "printed_order": 14,
+      "product_code": "CAN-14",
+      "description": "Caneta azul",
+      "ncm": "96081000",
+      "cfop": "5405",
+      "quantity": "16.8337",
+      "unit_price": "225.4069",
+      "item_total": 379443
+    }
+  ]
+}

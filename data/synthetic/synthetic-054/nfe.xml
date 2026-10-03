@@ -1,0 +1,523 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<nfeProc versao="4.00" xmlns="http://www.portalfiscal.inf.br/nfe">
+  <NFe xmlns="http://www.portalfiscal.inf.br/nfe">
+    <infNFe versao="4.00" Id="NFe41240377747957425563550030000000541689390276">
+      <ide>
+        <cUF>41</cUF>
+        <cNF>68939027</cNF>
+        <natOp>VENDA</natOp>
+        <mod>55</mod>
+        <serie>3</serie>
+        <nNF>54</nNF>
+        <dhEmi>2024-03-21T10:00:00-03:00</dhEmi>
+        <tpNF>1</tpNF>
+        <idDest>1</idDest>
+        <cMunFG>4106902</cMunFG>
+        <tpImp>1</tpImp>
+        <tpEmis>1</tpEmis>
+        <cDV>6</cDV>
+        <tpAmb>2</tpAmb>
+        <finNFe>1</finNFe>
+        <indFinal>1</indFinal>
+        <indPres>1</indPres>
+        <procEmi>0</procEmi>
+        <verProc>synthetic</verProc>
+      </ide>
+      <emit>
+        <CNPJ>77747957425563</CNPJ>
+        <xNome>Comercio Sintetico 054 Ltda</xNome>
+        <enderEmit><xLgr>Rua Sintetica</xLgr><nro>100</nro><xBairro>Centro</xBairro><cMun>4106902</cMun><xMun>Curitiba</xMun><UF>PR</UF><CEP>80010000</CEP><cPais>1058</cPais><xPais>BRASIL</xPais></enderEmit>
+        <IE>ISENTO</IE>
+        <CRT>3</CRT>
+      </emit>
+      <dest>
+        <CPF>73796059503</CPF>
+        <xNome>Destinatario Sintetico 054</xNome>
+        <enderDest><xLgr>Rua Sintetica</xLgr><nro>100</nro><xBairro>Centro</xBairro><cMun>4106902</cMun><xMun>Curitiba</xMun><UF>PR</UF><CEP>80010000</CEP><cPais>1058</cPais><xPais>BRASIL</xPais></enderDest>
+        <indIEDest>9</indIEDest>
+      </dest>
+      <det nItem="1">
+        <prod>
+          <cProd>CAM-01</cProd>
+          <cEAN>SEM GTIN</cEAN>
+          <xProd>Camiseta algodao</xProd>
+          <NCM>61091000</NCM>
+          <CFOP>5102</CFOP>
+          <uCom>UN</uCom>
+          <qCom>15.0501</qCom>
+          <vUnCom>138.4014000100</vUnCom>
+          <vProd>2082.95</vProd>
+          <cEANTrib>SEM GTIN</cEANTrib>
+          <uTrib>UN</uTrib>
+          <qTrib>15.0501</qTrib>
+          <vUnTrib>138.4014000100</vUnTrib>
+          <indTot>1</indTot>
+        </prod>
+        <imposto>
+          <ICMS><ICMS00><orig>0</orig><CST>00</CST><modBC>3</modBC><vBC>2082.95</vBC><pICMS>18.00</pICMS><vICMS>374.93</vICMS></ICMS00></ICMS>
+          <IPI><cEnq>999</cEnq><IPINT><CST>53</CST></IPINT></IPI>
+        </imposto>
+      </det>
+<det nItem="2">
+        <prod>
+          <cProd>CAF-02</cProd>
+          <cEAN>SEM GTIN</cEAN>
+          <xProd>Cafe torrado</xProd>
+          <NCM>09012100</NCM>
+          <CFOP>5102</CFOP>
+          <uCom>UN</uCom>
+          <qCom>18.3326</qCom>
+          <vUnCom>107.3587000100</vUnCom>
+          <vProd>1968.16</vProd>
+          <cEANTrib>SEM GTIN</cEANTrib>
+          <uTrib>UN</uTrib>
+          <qTrib>18.3326</qTrib>
+          <vUnTrib>107.3587000100</vUnTrib>
+          <indTot>1</indTot>
+        </prod>
+        <imposto>
+          <ICMS><ICMS00><orig>0</orig><CST>00</CST><modBC>3</modBC><vBC>1968.16</vBC><pICMS>18.00</pICMS><vICMS>354.27</vICMS></ICMS00></ICMS>
+          <IPI><cEnq>999</cEnq><IPINT><CST>53</CST></IPINT></IPI>
+        </imposto>
+      </det>
+<det nItem="3">
+        <prod>
+          <cProd>CAD-03</cProd>
+          <cEAN>SEM GTIN</cEAN>
+          <xProd>Caderno brochura</xProd>
+          <NCM>48202000</NCM>
+          <CFOP>5102</CFOP>
+          <uCom>UN</uCom>
+          <qCom>0.6827</qCom>
+          <vUnCom>9.9697000100</vUnCom>
+          <vProd>6.81</vProd>
+          <cEANTrib>SEM GTIN</cEANTrib>
+          <uTrib>UN</uTrib>
+          <qTrib>0.6827</qTrib>
+          <vUnTrib>9.9697000100</vUnTrib>
+          <indTot>1</indTot>
+        </prod>
+        <imposto>
+          <ICMS><ICMS00><orig>0</orig><CST>00</CST><modBC>3</modBC><vBC>6.81</vBC><pICMS>18.00</pICMS><vICMS>1.23</vICMS></ICMS00></ICMS>
+          <IPI><cEnq>999</cEnq><IPINT><CST>53</CST></IPINT></IPI>
+        </imposto>
+      </det>
+<det nItem="4">
+        <prod>
+          <cProd>CAN-04</cProd>
+          <cEAN>SEM GTIN</cEAN>
+          <xProd>Caneta azul</xProd>
+          <NCM>96081000</NCM>
+          <CFOP>5102</CFOP>
+          <uCom>UN</uCom>
+          <qCom>17.6085</qCom>
+          <vUnCom>235.1932000100</vUnCom>
+          <vProd>4141.40</vProd>
+          <cEANTrib>SEM GTIN</cEANTrib>
+          <uTrib>UN</uTrib>
+          <qTrib>17.6085</qTrib>
+          <vUnTrib>235.1932000100</vUnTrib>
+          <indTot>1</indTot>
+        </prod>
+        <imposto>
+          <ICMS><ICMS00><orig>0</orig><CST>00</CST><modBC>3</modBC><vBC>4141.40</vBC><pICMS>18.00</pICMS><vICMS>745.45</vICMS></ICMS00></ICMS>
+          <IPI><cEnq>999</cEnq><IPINT><CST>53</CST></IPINT></IPI>
+        </imposto>
+      </det>
+<det nItem="5">
+        <prod>
+          <cProd>DET-05</cProd>
+          <cEAN>SEM GTIN</cEAN>
+          <xProd>Detergente neutro</xProd>
+          <NCM>34025000</NCM>
+          <CFOP>5102</CFOP>
+          <uCom>UN</uCom>
+          <qCom>9.3814</qCom>
+          <vUnCom>183.3928000100</vUnCom>
+          <vProd>1720.48</vProd>
+          <cEANTrib>SEM GTIN</cEANTrib>
+          <uTrib>UN</uTrib>
+          <qTrib>9.3814</qTrib>
+          <vUnTrib>183.3928000100</vUnTrib>
+          <indTot>1</indTot>
+        </prod>
+        <imposto>
+          <ICMS><ICMS00><orig>0</orig><CST>00</CST><modBC>3</modBC><vBC>1720.48</vBC><pICMS>18.00</pICMS><vICMS>309.69</vICMS></ICMS00></ICMS>
+          <IPI><cEnq>999</cEnq><IPINT><CST>53</CST></IPINT></IPI>
+        </imposto>
+      </det>
+<det nItem="6">
+        <prod>
+          <cProd>ARR-06</cProd>
+          <cEAN>SEM GTIN</cEAN>
+          <xProd>Arroz tipo 1</xProd>
+          <NCM>10063021</NCM>
+          <CFOP>5102</CFOP>
+          <uCom>UN</uCom>
+          <qCom>18.0088</qCom>
+          <vUnCom>48.4358000100</vUnCom>
+          <vProd>872.27</vProd>
+          <cEANTrib>SEM GTIN</cEANTrib>
+          <uTrib>UN</uTrib>
+          <qTrib>18.0088</qTrib>
+          <vUnTrib>48.4358000100</vUnTrib>
+          <indTot>1</indTot>
+        </prod>
+        <imposto>
+          <ICMS><ICMS00><orig>0</orig><CST>00</CST><modBC>3</modBC><vBC>872.27</vBC><pICMS>18.00</pICMS><vICMS>157.01</vICMS></ICMS00></ICMS>
+          <IPI><cEnq>999</cEnq><IPINT><CST>53</CST></IPINT></IPI>
+        </imposto>
+      </det>
+<det nItem="7">
+        <prod>
+          <cProd>FEI-07</cProd>
+          <cEAN>SEM GTIN</cEAN>
+          <xProd>Feijao carioca</xProd>
+          <NCM>07133399</NCM>
+          <CFOP>5102</CFOP>
+          <uCom>UN</uCom>
+          <qCom>18.3755</qCom>
+          <vUnCom>220.9482000100</vUnCom>
+          <vProd>4060.03</vProd>
+          <cEANTrib>SEM GTIN</cEANTrib>
+          <uTrib>UN</uTrib>
+          <qTrib>18.3755</qTrib>
+          <vUnTrib>220.9482000100</vUnTrib>
+          <indTot>1</indTot>
+        </prod>
+        <imposto>
+          <ICMS><ICMS00><orig>0</orig><CST>00</CST><modBC>3</modBC><vBC>4060.03</vBC><pICMS>18.00</pICMS><vICMS>730.81</vICMS></ICMS00></ICMS>
+          <IPI><cEnq>999</cEnq><IPINT><CST>53</CST></IPINT></IPI>
+        </imposto>
+      </det>
+<det nItem="8">
+        <prod>
+          <cProd>LEI-08</cProd>
+          <cEAN>SEM GTIN</cEAN>
+          <xProd>Leite integral</xProd>
+          <NCM>04012010</NCM>
+          <CFOP>5102</CFOP>
+          <uCom>UN</uCom>
+          <qCom>5.7480</qCom>
+          <vUnCom>77.5404000100</vUnCom>
+          <vProd>445.70</vProd>
+          <cEANTrib>SEM GTIN</cEANTrib>
+          <uTrib>UN</uTrib>
+          <qTrib>5.7480</qTrib>
+          <vUnTrib>77.5404000100</vUnTrib>
+          <indTot>1</indTot>
+        </prod>
+        <imposto>
+          <ICMS><ICMS00><orig>0</orig><CST>00</CST><modBC>3</modBC><vBC>445.70</vBC><pICMS>18.00</pICMS><vICMS>80.23</vICMS></ICMS00></ICMS>
+          <IPI><cEnq>999</cEnq><IPINT><CST>53</CST></IPINT></IPI>
+        </imposto>
+      </det>
+<det nItem="9">
+        <prod>
+          <cProd>SAB-09</cProd>
+          <cEAN>SEM GTIN</cEAN>
+          <xProd>Sabonete barra</xProd>
+          <NCM>34011190</NCM>
+          <CFOP>5102</CFOP>
+          <uCom>UN</uCom>
+          <qCom>18.1119</qCom>
+          <vUnCom>244.0855000100</vUnCom>
+          <vProd>4420.85</vProd>
+          <cEANTrib>SEM GTIN</cEANTrib>
+          <uTrib>UN</uTrib>
+          <qTrib>18.1119</qTrib>
+          <vUnTrib>244.0855000100</vUnTrib>
+          <indTot>1</indTot>
+        </prod>
+        <imposto>
+          <ICMS><ICMS00><orig>0</orig><CST>00</CST><modBC>3</modBC><vBC>4420.85</vBC><pICMS>18.00</pICMS><vICMS>795.75</vICMS></ICMS00></ICMS>
+          <IPI><cEnq>999</cEnq><IPINT><CST>53</CST></IPINT></IPI>
+        </imposto>
+      </det>
+<det nItem="10">
+        <prod>
+          <cProd>PAP-10</cProd>
+          <cEAN>SEM GTIN</cEAN>
+          <xProd>Papel sulfite</xProd>
+          <NCM>48025610</NCM>
+          <CFOP>5102</CFOP>
+          <uCom>UN</uCom>
+          <qCom>16.8822</qCom>
+          <vUnCom>134.1399000100</vUnCom>
+          <vProd>2264.58</vProd>
+          <cEANTrib>SEM GTIN</cEANTrib>
+          <uTrib>UN</uTrib>
+          <qTrib>16.8822</qTrib>
+          <vUnTrib>134.1399000100</vUnTrib>
+          <indTot>1</indTot>
+        </prod>
+        <imposto>
+          <ICMS><ICMS00><orig>0</orig><CST>00</CST><modBC>3</modBC><vBC>2264.58</vBC><pICMS>18.00</pICMS><vICMS>407.62</vICMS></ICMS00></ICMS>
+          <IPI><cEnq>999</cEnq><IPINT><CST>53</CST></IPINT></IPI>
+        </imposto>
+      </det>
+<det nItem="11">
+        <prod>
+          <cProd>CAM-11</cProd>
+          <cEAN>SEM GTIN</cEAN>
+          <xProd>Camiseta algodao</xProd>
+          <NCM>61091000</NCM>
+          <CFOP>5102</CFOP>
+          <uCom>UN</uCom>
+          <qCom>7.5345</qCom>
+          <vUnCom>85.8857000100</vUnCom>
+          <vProd>647.11</vProd>
+          <cEANTrib>SEM GTIN</cEANTrib>
+          <uTrib>UN</uTrib>
+          <qTrib>7.5345</qTrib>
+          <vUnTrib>85.8857000100</vUnTrib>
+          <indTot>1</indTot>
+        </prod>
+        <imposto>
+          <ICMS><ICMS00><orig>0</orig><CST>00</CST><modBC>3</modBC><vBC>647.11</vBC><pICMS>18.00</pICMS><vICMS>116.48</vICMS></ICMS00></ICMS>
+          <IPI><cEnq>999</cEnq><IPINT><CST>53</CST></IPINT></IPI>
+        </imposto>
+      </det>
+<det nItem="12">
+        <prod>
+          <cProd>CAF-12</cProd>
+          <cEAN>SEM GTIN</cEAN>
+          <xProd>Cafe torrado</xProd>
+          <NCM>09012100</NCM>
+          <CFOP>5102</CFOP>
+          <uCom>UN</uCom>
+          <qCom>15.9908</qCom>
+          <vUnCom>166.2175000100</vUnCom>
+          <vProd>2657.95</vProd>
+          <cEANTrib>SEM GTIN</cEANTrib>
+          <uTrib>UN</uTrib>
+          <qTrib>15.9908</qTrib>
+          <vUnTrib>166.2175000100</vUnTrib>
+          <indTot>1</indTot>
+        </prod>
+        <imposto>
+          <ICMS><ICMS00><orig>0</orig><CST>00</CST><modBC>3</modBC><vBC>2657.95</vBC><pICMS>18.00</pICMS><vICMS>478.43</vICMS></ICMS00></ICMS>
+          <IPI><cEnq>999</cEnq><IPINT><CST>53</CST></IPINT></IPI>
+        </imposto>
+      </det>
+<det nItem="13">
+        <prod>
+          <cProd>CAD-13</cProd>
+          <cEAN>SEM GTIN</cEAN>
+          <xProd>Caderno brochura</xProd>
+          <NCM>48202000</NCM>
+          <CFOP>5102</CFOP>
+          <uCom>UN</uCom>
+          <qCom>18.6118</qCom>
+          <vUnCom>68.0261000100</vUnCom>
+          <vProd>1266.09</vProd>
+          <cEANTrib>SEM GTIN</cEANTrib>
+          <uTrib>UN</uTrib>
+          <qTrib>18.6118</qTrib>
+          <vUnTrib>68.0261000100</vUnTrib>
+          <indTot>1</indTot>
+        </prod>
+        <imposto>
+          <ICMS><ICMS00><orig>0</orig><CST>00</CST><modBC>3</modBC><vBC>1266.09</vBC><pICMS>18.00</pICMS><vICMS>227.90</vICMS></ICMS00></ICMS>
+          <IPI><cEnq>999</cEnq><IPINT><CST>53</CST></IPINT></IPI>
+        </imposto>
+      </det>
+<det nItem="14">
+        <prod>
+          <cProd>CAN-14</cProd>
+          <cEAN>SEM GTIN</cEAN>
+          <xProd>Caneta azul</xProd>
+          <NCM>96081000</NCM>
+          <CFOP>5102</CFOP>
+          <uCom>UN</uCom>
+          <qCom>3.6322</qCom>
+          <vUnCom>203.4582000100</vUnCom>
+          <vProd>739.00</vProd>
+          <cEANTrib>SEM GTIN</cEANTrib>
+          <uTrib>UN</uTrib>
+          <qTrib>3.6322</qTrib>
+          <vUnTrib>203.4582000100</vUnTrib>
+          <indTot>1</indTot>
+        </prod>
+        <imposto>
+          <ICMS><ICMS00><orig>0</orig><CST>00</CST><modBC>3</modBC><vBC>739.00</vBC><pICMS>18.00</pICMS><vICMS>133.02</vICMS></ICMS00></ICMS>
+          <IPI><cEnq>999</cEnq><IPINT><CST>53</CST></IPINT></IPI>
+        </imposto>
+      </det>
+<det nItem="15">
+        <prod>
+          <cProd>DET-15</cProd>
+          <cEAN>SEM GTIN</cEAN>
+          <xProd>Detergente neutro</xProd>
+          <NCM>34025000</NCM>
+          <CFOP>5102</CFOP>
+          <uCom>UN</uCom>
+          <qCom>7.5312</qCom>
+          <vUnCom>167.2074000100</vUnCom>
+          <vProd>1259.27</vProd>
+          <cEANTrib>SEM GTIN</cEANTrib>
+          <uTrib>UN</uTrib>
+          <qTrib>7.5312</qTrib>
+          <vUnTrib>167.2074000100</vUnTrib>
+          <indTot>1</indTot>
+        </prod>
+        <imposto>
+          <ICMS><ICMS00><orig>0</orig><CST>00</CST><modBC>3</modBC><vBC>1259.27</vBC><pICMS>18.00</pICMS><vICMS>226.67</vICMS></ICMS00></ICMS>
+          <IPI><cEnq>999</cEnq><IPINT><CST>53</CST></IPINT></IPI>
+        </imposto>
+      </det>
+<det nItem="16">
+        <prod>
+          <cProd>ARR-16</cProd>
+          <cEAN>SEM GTIN</cEAN>
+          <xProd>Arroz tipo 1</xProd>
+          <NCM>10063021</NCM>
+          <CFOP>5102</CFOP>
+          <uCom>UN</uCom>
+          <qCom>19.3192</qCom>
+          <vUnCom>191.0548000100</vUnCom>
+          <vProd>3691.03</vProd>
+          <cEANTrib>SEM GTIN</cEANTrib>
+          <uTrib>UN</uTrib>
+          <qTrib>19.3192</qTrib>
+          <vUnTrib>191.0548000100</vUnTrib>
+          <indTot>1</indTot>
+        </prod>
+        <imposto>
+          <ICMS><ICMS00><orig>0</orig><CST>00</CST><modBC>3</modBC><vBC>3691.03</vBC><pICMS>18.00</pICMS><vICMS>664.39</vICMS></ICMS00></ICMS>
+          <IPI><cEnq>999</cEnq><IPINT><CST>53</CST></IPINT></IPI>
+        </imposto>
+      </det>
+<det nItem="17">
+        <prod>
+          <cProd>FEI-17</cProd>
+          <cEAN>SEM GTIN</cEAN>
+          <xProd>Feijao carioca</xProd>
+          <NCM>07133399</NCM>
+          <CFOP>5102</CFOP>
+          <uCom>UN</uCom>
+          <qCom>8.4464</qCom>
+          <vUnCom>111.7470000100</vUnCom>
+          <vProd>943.86</vProd>
+          <cEANTrib>SEM GTIN</cEANTrib>
+          <uTrib>UN</uTrib>
+          <qTrib>8.4464</qTrib>
+          <vUnTrib>111.7470000100</vUnTrib>
+          <indTot>1</indTot>
+        </prod>
+        <imposto>
+          <ICMS><ICMS00><orig>0</orig><CST>00</CST><modBC>3</modBC><vBC>943.86</vBC><pICMS>18.00</pICMS><vICMS>169.89</vICMS></ICMS00></ICMS>
+          <IPI><cEnq>999</cEnq><IPINT><CST>53</CST></IPINT></IPI>
+        </imposto>
+      </det>
+<det nItem="18">
+        <prod>
+          <cProd>LEI-18</cProd>
+          <cEAN>SEM GTIN</cEAN>
+          <xProd>Leite integral</xProd>
+          <NCM>04012010</NCM>
+          <CFOP>5102</CFOP>
+          <uCom>UN</uCom>
+          <qCom>8.2444</qCom>
+          <vUnCom>139.0816000100</vUnCom>
+          <vProd>1146.64</vProd>
+          <cEANTrib>SEM GTIN</cEANTrib>
+          <uTrib>UN</uTrib>
+          <qTrib>8.2444</qTrib>
+          <vUnTrib>139.0816000100</vUnTrib>
+          <indTot>1</indTot>
+        </prod>
+        <imposto>
+          <ICMS><ICMS00><orig>0</orig><CST>00</CST><modBC>3</modBC><vBC>1146.64</vBC><pICMS>18.00</pICMS><vICMS>206.40</vICMS></ICMS00></ICMS>
+          <IPI><cEnq>999</cEnq><IPINT><CST>53</CST></IPINT></IPI>
+        </imposto>
+      </det>
+<det nItem="19">
+        <prod>
+          <cProd>SAB-19</cProd>
+          <cEAN>SEM GTIN</cEAN>
+          <xProd>Sabonete barra</xProd>
+          <NCM>34011190</NCM>
+          <CFOP>5102</CFOP>
+          <uCom>UN</uCom>
+          <qCom>0.9069</qCom>
+          <vUnCom>119.9307000100</vUnCom>
+          <vProd>108.77</vProd>
+          <cEANTrib>SEM GTIN</cEANTrib>
+          <uTrib>UN</uTrib>
+          <qTrib>0.9069</qTrib>
+          <vUnTrib>119.9307000100</vUnTrib>
+          <indTot>1</indTot>
+        </prod>
+        <imposto>
+          <ICMS><ICMS00><orig>0</orig><CST>00</CST><modBC>3</modBC><vBC>108.77</vBC><pICMS>18.00</pICMS><vICMS>19.58</vICMS></ICMS00></ICMS>
+          <IPI><cEnq>999</cEnq><IPINT><CST>53</CST></IPINT></IPI>
+        </imposto>
+      </det>
+<det nItem="20">
+        <prod>
+          <cProd>PAP-20</cProd>
+          <cEAN>SEM GTIN</cEAN>
+          <xProd>Papel sulfite</xProd>
+          <NCM>48025610</NCM>
+          <CFOP>5102</CFOP>
+          <uCom>UN</uCom>
+          <qCom>17.2375</qCom>
+          <vUnCom>166.7544000100</vUnCom>
+          <vProd>2874.43</vProd>
+          <cEANTrib>SEM GTIN</cEANTrib>
+          <uTrib>UN</uTrib>
+          <qTrib>17.2375</qTrib>
+          <vUnTrib>166.7544000100</vUnTrib>
+          <indTot>1</indTot>
+        </prod>
+        <imposto>
+          <ICMS><ICMS00><orig>0</orig><CST>00</CST><modBC>3</modBC><vBC>2874.43</vBC><pICMS>18.00</pICMS><vICMS>517.40</vICMS></ICMS00></ICMS>
+          <IPI><cEnq>999</cEnq><IPINT><CST>53</CST></IPINT></IPI>
+        </imposto>
+      </det>
+      <total>
+        <ICMSTot>
+          <vBC>37317.38</vBC>
+          <vICMS>6717.15</vICMS>
+          <vICMSDeson>0.00</vICMSDeson>
+          <vFCP>0.00</vFCP>
+          <vBCST>0.00</vBCST>
+          <vST>0.00</vST>
+          <vFCPST>0.00</vFCPST>
+          <vFCPSTRet>0.00</vFCPSTRet>
+          <vProd>37317.38</vProd>
+          <vFrete>0.00</vFrete>
+          <vSeg>0.00</vSeg>
+          <vDesc>0.00</vDesc>
+          <vII>0.00</vII>
+          <vIPI>0.00</vIPI>
+          <vIPIDevol>0.00</vIPIDevol>
+          <vPIS>0.00</vPIS>
+          <vCOFINS>0.00</vCOFINS>
+          <vOutro>0.00</vOutro>
+          <vNF>37317.38</vNF>
+        </ICMSTot>
+      </total>
+      <transp><modFrete>9</modFrete></transp>
+      <pag>
+        <detPag>
+          <tPag>01</tPag>
+          <vPag>37317.38</vPag>
+        </detPag>
+      </pag>
+    </infNFe>
+  </NFe>
+  <protNFe versao="4.00">
+    <infProt>
+      <tpAmb>2</tpAmb>
+      <verAplic>SYN</verAplic>
+      <chNFe>41240377747957425563550030000000541689390276</chNFe>
+      <dhRecbto>2024-03-21T10:00:00-03:00</dhRecbto>
+      <nProt>135240000000054</nProt>
+      <digVal>AAAAAAAAAAAAAAAAAAAAAAAAAAA=</digVal>
+      <cStat>100</cStat>
+      <xMotivo>Autorizado o uso da NF-e</xMotivo>
+    </infProt>
+  </protNFe>
+</nfeProc>

@@ -1,0 +1,79 @@
+{
+  "header": {
+    "access_key": "31241161346462423891550030000000631095932060",
+    "state": "MG",
+    "model": "55",
+    "series": "3",
+    "number": "63",
+    "issue_date": "2024-11-13",
+    "issuer_cnpj": "61346462423891",
+    "recipient_cnpj_cpf": "66421744391014",
+    "total_products": 849358,
+    "freight": 0,
+    "insurance": 0,
+    "discount": 1918,
+    "ipi_total": 0,
+    "other_expenses": 0,
+    "icms_total": 152885,
+    "icms_st_total": 101923,
+    "invoice_total": 949363,
+    "unsupported_components": {
+      "import_tax": false,
+      "returned_ipi": false,
+      "icms_relief": false,
+      "fcp_st": false
+    }
+  },
+  "line_items": [
+    {
+      "printed_order": 1,
+      "product_code": "CAM-01",
+      "description": "Camiseta algodao",
+      "ncm": "61091000",
+      "cfop": "5405",
+      "quantity": "6.8203",
+      "unit_price": "243.4227",
+      "item_total": 166022
+    },
+    {
+      "printed_order": 2,
+      "product_code": "CAF-02",
+      "description": "Cafe torrado",
+      "ncm": "09012100",
+      "cfop": "5405",
+      "quantity": "19.1535",
+      "unit_price": "112.6571",
+      "item_total": 215778
+    },
+    {
+      "printed_order": 3,
+      "product_code": "CAD-03",
+      "description": "Caderno brochura",
+      "ncm": "48202000",
+      "cfop": "5405",
+      "quantity": "16.5921",
+      "unit_price": "177.8343",
+      "item_total": 295064
+    },
+    {
+      "printed_order": 4,
+      "product_code": "CAN-04",
+      "description": "Caneta azul",
+      "ncm": "96081000",
+      "cfop": "5405",
+      "quantity": "3.0947",
+      "unit_price": "159.8222",
+      "item_total": 49460
+    },
+    {
+      "printed_order": 5,
+      "product_code": "DET-05",
+      "description": "Detergente neutro",
+      "ncm": "34025000",
+      "cfop": "5405",
+      "quantity": "7.4602",
+      "unit_price": "164.9200",
+      "item_total": 123034
+    }
+  ]
+}

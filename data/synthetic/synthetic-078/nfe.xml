@@ -1,0 +1,919 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<nfeProc versao="4.00" xmlns="http://www.portalfiscal.inf.br/nfe">
+  <NFe xmlns="http://www.portalfiscal.inf.br/nfe">
+    <infNFe versao="4.00" Id="NFe23240421844654162660550030000000781834279332">
+      <ide>
+        <cUF>23</cUF>
+        <cNF>83427933</cNF>
+        <natOp>VENDA</natOp>
+        <mod>55</mod>
+        <serie>3</serie>
+        <nNF>78</nNF>
+        <dhEmi>2024-04-10T10:00:00-03:00</dhEmi>
+        <tpNF>1</tpNF>
+        <idDest>1</idDest>
+        <cMunFG>2304400</cMunFG>
+        <tpImp>1</tpImp>
+        <tpEmis>1</tpEmis>
+        <cDV>2</cDV>
+        <tpAmb>2</tpAmb>
+        <finNFe>1</finNFe>
+        <indFinal>1</indFinal>
+        <indPres>1</indPres>
+        <procEmi>0</procEmi>
+        <verProc>synthetic</verProc>
+      </ide>
+      <emit>
+        <CNPJ>21844654162660</CNPJ>
+        <xNome>Comercio Sintetico 078 Ltda</xNome>
+        <enderEmit><xLgr>Rua Sintetica</xLgr><nro>100</nro><xBairro>Centro</xBairro><cMun>2304400</cMun><xMun>Fortaleza</xMun><UF>CE</UF><CEP>60010000</CEP><cPais>1058</cPais><xPais>BRASIL</xPais></enderEmit>
+        <IE>ISENTO</IE>
+        <CRT>3</CRT>
+      </emit>
+      <dest>
+        <CNPJ>53047985224520</CNPJ>
+        <xNome>Destinatario Sintetico 078</xNome>
+        <enderDest><xLgr>Rua Sintetica</xLgr><nro>100</nro><xBairro>Centro</xBairro><cMun>2304400</cMun><xMun>Fortaleza</xMun><UF>CE</UF><CEP>60010000</CEP><cPais>1058</cPais><xPais>BRASIL</xPais></enderDest>
+        <indIEDest>9</indIEDest>
+      </dest>
+      <det nItem="1">
+        <prod>
+          <cProd>CAM-01</cProd>
+          <cEAN>SEM GTIN</cEAN>
+          <xProd>Parafuso sextavado zincado com arruela de pressao e porca para fixacao de estrutura metalica</xProd>
+          <NCM>61091000</NCM>
+          <CFOP>5405</CFOP>
+          <uCom>UN</uCom>
+          <qCom>6.7180</qCom>
+          <vUnCom>137.0255000100</vUnCom>
+          <vProd>920.54</vProd>
+          <cEANTrib>SEM GTIN</cEANTrib>
+          <uTrib>UN</uTrib>
+          <qTrib>6.7180</qTrib>
+          <vUnTrib>137.0255000100</vUnTrib>
+          <indTot>1</indTot>
+        </prod>
+        <imposto>
+          <ICMS><ICMS10><orig>0</orig><CST>10</CST><modBC>3</modBC><vBC>920.54</vBC><pICMS>18.00</pICMS><vICMS>165.70</vICMS><modBCST>4</modBCST><vBCST>920.54</vBCST><pICMSST>12.00</pICMSST><vICMSST>110.46</vICMSST></ICMS10></ICMS>
+          <IPI><cEnq>999</cEnq><IPINT><CST>53</CST></IPINT></IPI>
+        </imposto>
+      </det>
+<det nItem="2">
+        <prod>
+          <cProd>CAF-02</cProd>
+          <cEAN>SEM GTIN</cEAN>
+          <xProd>Parafuso sextavado zincado com arruela de pressao e porca para fixacao de estrutura metalica</xProd>
+          <NCM>09012100</NCM>
+          <CFOP>5405</CFOP>
+          <uCom>UN</uCom>
+          <qCom>11.8631</qCom>
+          <vUnCom>201.5604000100</vUnCom>
+          <vProd>2391.13</vProd>
+          <cEANTrib>SEM GTIN</cEANTrib>
+          <uTrib>UN</uTrib>
+          <qTrib>11.8631</qTrib>
+          <vUnTrib>201.5604000100</vUnTrib>
+          <indTot>1</indTot>
+        </prod>
+        <imposto>
+          <ICMS><ICMS10><orig>0</orig><CST>10</CST><modBC>3</modBC><vBC>2391.13</vBC><pICMS>18.00</pICMS><vICMS>430.40</vICMS><modBCST>4</modBCST><vBCST>2391.13</vBCST><pICMSST>12.00</pICMSST><vICMSST>286.94</vICMSST></ICMS10></ICMS>
+          <IPI><cEnq>999</cEnq><IPINT><CST>53</CST></IPINT></IPI>
+        </imposto>
+      </det>
+<det nItem="3">
+        <prod>
+          <cProd>CAD-03</cProd>
+          <cEAN>SEM GTIN</cEAN>
+          <xProd>Parafuso sextavado zincado com arruela de pressao e porca para fixacao de estrutura metalica</xProd>
+          <NCM>48202000</NCM>
+          <CFOP>5405</CFOP>
+          <uCom>UN</uCom>
+          <qCom>16.2380</qCom>
+          <vUnCom>173.1048000100</vUnCom>
+          <vProd>2810.88</vProd>
+          <cEANTrib>SEM GTIN</cEANTrib>
+          <uTrib>UN</uTrib>
+          <qTrib>16.2380</qTrib>
+          <vUnTrib>173.1048000100</vUnTrib>
+          <indTot>1</indTot>
+        </prod>
+        <imposto>
+          <ICMS><ICMS10><orig>0</orig><CST>10</CST><modBC>3</modBC><vBC>2810.88</vBC><pICMS>18.00</pICMS><vICMS>505.96</vICMS><modBCST>4</modBCST><vBCST>2810.88</vBCST><pICMSST>12.00</pICMSST><vICMSST>337.31</vICMSST></ICMS10></ICMS>
+          <IPI><cEnq>999</cEnq><IPINT><CST>53</CST></IPINT></IPI>
+        </imposto>
+      </det>
+<det nItem="4">
+        <prod>
+          <cProd>CAN-04</cProd>
+          <cEAN>SEM GTIN</cEAN>
+          <xProd>Parafuso sextavado zincado com arruela de pressao e porca para fixacao de estrutura metalica</xProd>
+          <NCM>96081000</NCM>
+          <CFOP>5405</CFOP>
+          <uCom>UN</uCom>
+          <qCom>6.5717</qCom>
+          <vUnCom>109.5057000100</vUnCom>
+          <vProd>719.64</vProd>
+          <cEANTrib>SEM GTIN</cEANTrib>
+          <uTrib>UN</uTrib>
+          <qTrib>6.5717</qTrib>
+          <vUnTrib>109.5057000100</vUnTrib>
+          <indTot>1</indTot>
+        </prod>
+        <imposto>
+          <ICMS><ICMS10><orig>0</orig><CST>10</CST><modBC>3</modBC><vBC>719.64</vBC><pICMS>18.00</pICMS><vICMS>129.54</vICMS><modBCST>4</modBCST><vBCST>719.64</vBCST><pICMSST>12.00</pICMSST><vICMSST>86.36</vICMSST></ICMS10></ICMS>
+          <IPI><cEnq>999</cEnq><IPINT><CST>53</CST></IPINT></IPI>
+        </imposto>
+      </det>
+<det nItem="5">
+        <prod>
+          <cProd>DET-05</cProd>
+          <cEAN>SEM GTIN</cEAN>
+          <xProd>Parafuso sextavado zincado com arruela de pressao e porca para fixacao de estrutura metalica</xProd>
+          <NCM>34025000</NCM>
+          <CFOP>5405</CFOP>
+          <uCom>UN</uCom>
+          <qCom>13.3314</qCom>
+          <vUnCom>118.9105000100</vUnCom>
+          <vProd>1585.24</vProd>
+          <cEANTrib>SEM GTIN</cEANTrib>
+          <uTrib>UN</uTrib>
+          <qTrib>13.3314</qTrib>
+          <vUnTrib>118.9105000100</vUnTrib>
+          <indTot>1</indTot>
+        </prod>
+        <imposto>
+          <ICMS><ICMS10><orig>0</orig><CST>10</CST><modBC>3</modBC><vBC>1585.24</vBC><pICMS>18.00</pICMS><vICMS>285.34</vICMS><modBCST>4</modBCST><vBCST>1585.24</vBCST><pICMSST>12.00</pICMSST><vICMSST>190.23</vICMSST></ICMS10></ICMS>
+          <IPI><cEnq>999</cEnq><IPINT><CST>53</CST></IPINT></IPI>
+        </imposto>
+      </det>
+<det nItem="6">
+        <prod>
+          <cProd>ARR-06</cProd>
+          <cEAN>SEM GTIN</cEAN>
+          <xProd>Parafuso sextavado zincado com arruela de pressao e porca para fixacao de estrutura metalica</xProd>
+          <NCM>10063021</NCM>
+          <CFOP>5405</CFOP>
+          <uCom>UN</uCom>
+          <qCom>7.9812</qCom>
+          <vUnCom>213.1881000100</vUnCom>
+          <vProd>1701.50</vProd>
+          <cEANTrib>SEM GTIN</cEANTrib>
+          <uTrib>UN</uTrib>
+          <qTrib>7.9812</qTrib>
+          <vUnTrib>213.1881000100</vUnTrib>
+          <indTot>1</indTot>
+        </prod>
+        <imposto>
+          <ICMS><ICMS10><orig>0</orig><CST>10</CST><modBC>3</modBC><vBC>1701.50</vBC><pICMS>18.00</pICMS><vICMS>306.27</vICMS><modBCST>4</modBCST><vBCST>1701.50</vBCST><pICMSST>12.00</pICMSST><vICMSST>204.18</vICMSST></ICMS10></ICMS>
+          <IPI><cEnq>999</cEnq><IPINT><CST>53</CST></IPINT></IPI>
+        </imposto>
+      </det>
+<det nItem="7">
+        <prod>
+          <cProd>FEI-07</cProd>
+          <cEAN>SEM GTIN</cEAN>
+          <xProd>Parafuso sextavado zincado com arruela de pressao e porca para fixacao de estrutura metalica</xProd>
+          <NCM>07133399</NCM>
+          <CFOP>5405</CFOP>
+          <uCom>UN</uCom>
+          <qCom>15.7780</qCom>
+          <vUnCom>81.5472000100</vUnCom>
+          <vProd>1286.65</vProd>
+          <cEANTrib>SEM GTIN</cEANTrib>
+          <uTrib>UN</uTrib>
+          <qTrib>15.7780</qTrib>
+          <vUnTrib>81.5472000100</vUnTrib>
+          <indTot>1</indTot>
+        </prod>
+        <imposto>
+          <ICMS><ICMS10><orig>0</orig><CST>10</CST><modBC>3</modBC><vBC>1286.65</vBC><pICMS>18.00</pICMS><vICMS>231.60</vICMS><modBCST>4</modBCST><vBCST>1286.65</vBCST><pICMSST>12.00</pICMSST><vICMSST>154.40</vICMSST></ICMS10></ICMS>
+          <IPI><cEnq>999</cEnq><IPINT><CST>53</CST></IPINT></IPI>
+        </imposto>
+      </det>
+<det nItem="8">
+        <prod>
+          <cProd>LEI-08</cProd>
+          <cEAN>SEM GTIN</cEAN>
+          <xProd>Parafuso sextavado zincado com arruela de pressao e porca para fixacao de estrutura metalica</xProd>
+          <NCM>04012010</NCM>
+          <CFOP>5405</CFOP>
+          <uCom>UN</uCom>
+          <qCom>19.9910</qCom>
+          <vUnCom>113.9484000100</vUnCom>
+          <vProd>2277.94</vProd>
+          <cEANTrib>SEM GTIN</cEANTrib>
+          <uTrib>UN</uTrib>
+          <qTrib>19.9910</qTrib>
+          <vUnTrib>113.9484000100</vUnTrib>
+          <indTot>1</indTot>
+        </prod>
+        <imposto>
+          <ICMS><ICMS10><orig>0</orig><CST>10</CST><modBC>3</modBC><vBC>2277.94</vBC><pICMS>18.00</pICMS><vICMS>410.03</vICMS><modBCST>4</modBCST><vBCST>2277.94</vBCST><pICMSST>12.00</pICMSST><vICMSST>273.35</vICMSST></ICMS10></ICMS>
+          <IPI><cEnq>999</cEnq><IPINT><CST>53</CST></IPINT></IPI>
+        </imposto>
+      </det>
+<det nItem="9">
+        <prod>
+          <cProd>SAB-09</cProd>
+          <cEAN>SEM GTIN</cEAN>
+          <xProd>Parafuso sextavado zincado com arruela de pressao e porca para fixacao de estrutura metalica</xProd>
+          <NCM>34011190</NCM>
+          <CFOP>5405</CFOP>
+          <uCom>UN</uCom>
+          <qCom>5.5642</qCom>
+          <vUnCom>163.5857000100</vUnCom>
+          <vProd>910.22</vProd>
+          <cEANTrib>SEM GTIN</cEANTrib>
+          <uTrib>UN</uTrib>
+          <qTrib>5.5642</qTrib>
+          <vUnTrib>163.5857000100</vUnTrib>
+          <indTot>1</indTot>
+        </prod>
+        <imposto>
+          <ICMS><ICMS10><orig>0</orig><CST>10</CST><modBC>3</modBC><vBC>910.22</vBC><pICMS>18.00</pICMS><vICMS>163.84</vICMS><modBCST>4</modBCST><vBCST>910.22</vBCST><pICMSST>12.00</pICMSST><vICMSST>109.23</vICMSST></ICMS10></ICMS>
+          <IPI><cEnq>999</cEnq><IPINT><CST>53</CST></IPINT></IPI>
+        </imposto>
+      </det>
+<det nItem="10">
+        <prod>
+          <cProd>PAP-10</cProd>
+          <cEAN>SEM GTIN</cEAN>
+          <xProd>Parafuso sextavado zincado com arruela de pressao e porca para fixacao de estrutura metalica</xProd>
+          <NCM>48025610</NCM>
+          <CFOP>5405</CFOP>
+          <uCom>UN</uCom>
+          <qCom>5.0511</qCom>
+          <vUnCom>203.8538000100</vUnCom>
+          <vProd>1029.69</vProd>
+          <cEANTrib>SEM GTIN</cEANTrib>
+          <uTrib>UN</uTrib>
+          <qTrib>5.0511</qTrib>
+          <vUnTrib>203.8538000100</vUnTrib>
+          <indTot>1</indTot>
+        </prod>
+        <imposto>
+          <ICMS><ICMS10><orig>0</orig><CST>10</CST><modBC>3</modBC><vBC>1029.69</vBC><pICMS>18.00</pICMS><vICMS>185.34</vICMS><modBCST>4</modBCST><vBCST>1029.69</vBCST><pICMSST>12.00</pICMSST><vICMSST>123.56</vICMSST></ICMS10></ICMS>
+          <IPI><cEnq>999</cEnq><IPINT><CST>53</CST></IPINT></IPI>
+        </imposto>
+      </det>
+<det nItem="11">
+        <prod>
+          <cProd>CAM-11</cProd>
+          <cEAN>SEM GTIN</cEAN>
+          <xProd>Parafuso sextavado zincado com arruela de pressao e porca para fixacao de estrutura metalica</xProd>
+          <NCM>61091000</NCM>
+          <CFOP>5405</CFOP>
+          <uCom>UN</uCom>
+          <qCom>16.7551</qCom>
+          <vUnCom>14.0228000100</vUnCom>
+          <vProd>234.95</vProd>
+          <cEANTrib>SEM GTIN</cEANTrib>
+          <uTrib>UN</uTrib>
+          <qTrib>16.7551</qTrib>
+          <vUnTrib>14.0228000100</vUnTrib>
+          <indTot>1</indTot>
+        </prod>
+        <imposto>
+          <ICMS><ICMS10><orig>0</orig><CST>10</CST><modBC>3</modBC><vBC>234.95</vBC><pICMS>18.00</pICMS><vICMS>42.29</vICMS><modBCST>4</modBCST><vBCST>234.95</vBCST><pICMSST>12.00</pICMSST><vICMSST>28.19</vICMSST></ICMS10></ICMS>
+          <IPI><cEnq>999</cEnq><IPINT><CST>53</CST></IPINT></IPI>
+        </imposto>
+      </det>
+<det nItem="12">
+        <prod>
+          <cProd>CAF-12</cProd>
+          <cEAN>SEM GTIN</cEAN>
+          <xProd>Parafuso sextavado zincado com arruela de pressao e porca para fixacao de estrutura metalica</xProd>
+          <NCM>09012100</NCM>
+          <CFOP>5405</CFOP>
+          <uCom>UN</uCom>
+          <qCom>7.9016</qCom>
+          <vUnCom>151.8117000100</vUnCom>
+          <vProd>1199.56</vProd>
+          <cEANTrib>SEM GTIN</cEANTrib>
+          <uTrib>UN</uTrib>
+          <qTrib>7.9016</qTrib>
+          <vUnTrib>151.8117000100</vUnTrib>
+          <indTot>1</indTot>
+        </prod>
+        <imposto>
+          <ICMS><ICMS10><orig>0</orig><CST>10</CST><modBC>3</modBC><vBC>1199.56</vBC><pICMS>18.00</pICMS><vICMS>215.92</vICMS><modBCST>4</modBCST><vBCST>1199.56</vBCST><pICMSST>12.00</pICMSST><vICMSST>143.95</vICMSST></ICMS10></ICMS>
+          <IPI><cEnq>999</cEnq><IPINT><CST>53</CST></IPINT></IPI>
+        </imposto>
+      </det>
+<det nItem="13">
+        <prod>
+          <cProd>CAD-13</cProd>
+          <cEAN>SEM GTIN</cEAN>
+          <xProd>Parafuso sextavado zincado com arruela de pressao e porca para fixacao de estrutura metalica</xProd>
+          <NCM>48202000</NCM>
+          <CFOP>5405</CFOP>
+          <uCom>UN</uCom>
+          <qCom>15.3959</qCom>
+          <vUnCom>214.3423000100</vUnCom>
+          <vProd>3299.99</vProd>
+          <cEANTrib>SEM GTIN</cEANTrib>
+          <uTrib>UN</uTrib>
+          <qTrib>15.3959</qTrib>
+          <vUnTrib>214.3423000100</vUnTrib>
+          <indTot>1</indTot>
+        </prod>
+        <imposto>
+          <ICMS><ICMS10><orig>0</orig><CST>10</CST><modBC>3</modBC><vBC>3299.99</vBC><pICMS>18.00</pICMS><vICMS>594.00</vICMS><modBCST>4</modBCST><vBCST>3299.99</vBCST><pICMSST>12.00</pICMSST><vICMSST>396.00</vICMSST></ICMS10></ICMS>
+          <IPI><cEnq>999</cEnq><IPINT><CST>53</CST></IPINT></IPI>
+        </imposto>
+      </det>
+<det nItem="14">
+        <prod>
+          <cProd>CAN-14</cProd>
+          <cEAN>SEM GTIN</cEAN>
+          <xProd>Parafuso sextavado zincado com arruela de pressao e porca para fixacao de estrutura metalica</xProd>
+          <NCM>96081000</NCM>
+          <CFOP>5405</CFOP>
+          <uCom>UN</uCom>
+          <qCom>12.4308</qCom>
+          <vUnCom>154.8470000100</vUnCom>
+          <vProd>1924.87</vProd>
+          <cEANTrib>SEM GTIN</cEANTrib>
+          <uTrib>UN</uTrib>
+          <qTrib>12.4308</qTrib>
+          <vUnTrib>154.8470000100</vUnTrib>
+          <indTot>1</indTot>
+        </prod>
+        <imposto>
+          <ICMS><ICMS10><orig>0</orig><CST>10</CST><modBC>3</modBC><vBC>1924.87</vBC><pICMS>18.00</pICMS><vICMS>346.48</vICMS><modBCST>4</modBCST><vBCST>1924.87</vBCST><pICMSST>12.00</pICMSST><vICMSST>230.98</vICMSST></ICMS10></ICMS>
+          <IPI><cEnq>999</cEnq><IPINT><CST>53</CST></IPINT></IPI>
+        </imposto>
+      </det>
+<det nItem="15">
+        <prod>
+          <cProd>DET-15</cProd>
+          <cEAN>SEM GTIN</cEAN>
+          <xProd>Parafuso sextavado zincado com arruela de pressao e porca para fixacao de estrutura metalica</xProd>
+          <NCM>34025000</NCM>
+          <CFOP>5405</CFOP>
+          <uCom>UN</uCom>
+          <qCom>16.6324</qCom>
+          <vUnCom>192.1191000100</vUnCom>
+          <vProd>3195.40</vProd>
+          <cEANTrib>SEM GTIN</cEANTrib>
+          <uTrib>UN</uTrib>
+          <qTrib>16.6324</qTrib>
+          <vUnTrib>192.1191000100</vUnTrib>
+          <indTot>1</indTot>
+        </prod>
+        <imposto>
+          <ICMS><ICMS10><orig>0</orig><CST>10</CST><modBC>3</modBC><vBC>3195.40</vBC><pICMS>18.00</pICMS><vICMS>575.17</vICMS><modBCST>4</modBCST><vBCST>3195.40</vBCST><pICMSST>12.00</pICMSST><vICMSST>383.45</vICMSST></ICMS10></ICMS>
+          <IPI><cEnq>999</cEnq><IPINT><CST>53</CST></IPINT></IPI>
+        </imposto>
+      </det>
+<det nItem="16">
+        <prod>
+          <cProd>ARR-16</cProd>
+          <cEAN>SEM GTIN</cEAN>
+          <xProd>Parafuso sextavado zincado com arruela de pressao e porca para fixacao de estrutura metalica</xProd>
+          <NCM>10063021</NCM>
+          <CFOP>5405</CFOP>
+          <uCom>UN</uCom>
+          <qCom>15.6110</qCom>
+          <vUnCom>211.3979000100</vUnCom>
+          <vProd>3300.13</vProd>
+          <cEANTrib>SEM GTIN</cEANTrib>
+          <uTrib>UN</uTrib>
+          <qTrib>15.6110</qTrib>
+          <vUnTrib>211.3979000100</vUnTrib>
+          <indTot>1</indTot>
+        </prod>
+        <imposto>
+          <ICMS><ICMS10><orig>0</orig><CST>10</CST><modBC>3</modBC><vBC>3300.13</vBC><pICMS>18.00</pICMS><vICMS>594.02</vICMS><modBCST>4</modBCST><vBCST>3300.13</vBCST><pICMSST>12.00</pICMSST><vICMSST>396.02</vICMSST></ICMS10></ICMS>
+          <IPI><cEnq>999</cEnq><IPINT><CST>53</CST></IPINT></IPI>
+        </imposto>
+      </det>
+<det nItem="17">
+        <prod>
+          <cProd>FEI-17</cProd>
+          <cEAN>SEM GTIN</cEAN>
+          <xProd>Parafuso sextavado zincado com arruela de pressao e porca para fixacao de estrutura metalica</xProd>
+          <NCM>07133399</NCM>
+          <CFOP>5405</CFOP>
+          <uCom>UN</uCom>
+          <qCom>10.6157</qCom>
+          <vUnCom>244.0055000100</vUnCom>
+          <vProd>2590.29</vProd>
+          <cEANTrib>SEM GTIN</cEANTrib>
+          <uTrib>UN</uTrib>
+          <qTrib>10.6157</qTrib>
+          <vUnTrib>244.0055000100</vUnTrib>
+          <indTot>1</indTot>
+        </prod>
+        <imposto>
+          <ICMS><ICMS10><orig>0</orig><CST>10</CST><modBC>3</modBC><vBC>2590.29</vBC><pICMS>18.00</pICMS><vICMS>466.25</vICMS><modBCST>4</modBCST><vBCST>2590.29</vBCST><pICMSST>12.00</pICMSST><vICMSST>310.83</vICMSST></ICMS10></ICMS>
+          <IPI><cEnq>999</cEnq><IPINT><CST>53</CST></IPINT></IPI>
+        </imposto>
+      </det>
+<det nItem="18">
+        <prod>
+          <cProd>LEI-18</cProd>
+          <cEAN>SEM GTIN</cEAN>
+          <xProd>Parafuso sextavado zincado com arruela de pressao e porca para fixacao de estrutura metalica</xProd>
+          <NCM>04012010</NCM>
+          <CFOP>5405</CFOP>
+          <uCom>UN</uCom>
+          <qCom>18.0927</qCom>
+          <vUnCom>116.0375000100</vUnCom>
+          <vProd>2099.43</vProd>
+          <cEANTrib>SEM GTIN</cEANTrib>
+          <uTrib>UN</uTrib>
+          <qTrib>18.0927</qTrib>
+          <vUnTrib>116.0375000100</vUnTrib>
+          <indTot>1</indTot>
+        </prod>
+        <imposto>
+          <ICMS><ICMS10><orig>0</orig><CST>10</CST><modBC>3</modBC><vBC>2099.43</vBC><pICMS>18.00</pICMS><vICMS>377.90</vICMS><modBCST>4</modBCST><vBCST>2099.43</vBCST><pICMSST>12.00</pICMSST><vICMSST>251.93</vICMSST></ICMS10></ICMS>
+          <IPI><cEnq>999</cEnq><IPINT><CST>53</CST></IPINT></IPI>
+        </imposto>
+      </det>
+<det nItem="19">
+        <prod>
+          <cProd>SAB-19</cProd>
+          <cEAN>SEM GTIN</cEAN>
+          <xProd>Parafuso sextavado zincado com arruela de pressao e porca para fixacao de estrutura metalica</xProd>
+          <NCM>34011190</NCM>
+          <CFOP>5405</CFOP>
+          <uCom>UN</uCom>
+          <qCom>13.9632</qCom>
+          <vUnCom>213.3058000100</vUnCom>
+          <vProd>2978.43</vProd>
+          <cEANTrib>SEM GTIN</cEANTrib>
+          <uTrib>UN</uTrib>
+          <qTrib>13.9632</qTrib>
+          <vUnTrib>213.3058000100</vUnTrib>
+          <indTot>1</indTot>
+        </prod>
+        <imposto>
+          <ICMS><ICMS10><orig>0</orig><CST>10</CST><modBC>3</modBC><vBC>2978.43</vBC><pICMS>18.00</pICMS><vICMS>536.12</vICMS><modBCST>4</modBCST><vBCST>2978.43</vBCST><pICMSST>12.00</pICMSST><vICMSST>357.41</vICMSST></ICMS10></ICMS>
+          <IPI><cEnq>999</cEnq><IPINT><CST>53</CST></IPINT></IPI>
+        </imposto>
+      </det>
+<det nItem="20">
+        <prod>
+          <cProd>PAP-20</cProd>
+          <cEAN>SEM GTIN</cEAN>
+          <xProd>Parafuso sextavado zincado com arruela de pressao e porca para fixacao de estrutura metalica</xProd>
+          <NCM>48025610</NCM>
+          <CFOP>5405</CFOP>
+          <uCom>UN</uCom>
+          <qCom>11.1141</qCom>
+          <vUnCom>233.5869000100</vUnCom>
+          <vProd>2596.11</vProd>
+          <cEANTrib>SEM GTIN</cEANTrib>
+          <uTrib>UN</uTrib>
+          <qTrib>11.1141</qTrib>
+          <vUnTrib>233.5869000100</vUnTrib>
+          <indTot>1</indTot>
+        </prod>
+        <imposto>
+          <ICMS><ICMS10><orig>0</orig><CST>10</CST><modBC>3</modBC><vBC>2596.11</vBC><pICMS>18.00</pICMS><vICMS>467.30</vICMS><modBCST>4</modBCST><vBCST>2596.11</vBCST><pICMSST>12.00</pICMSST><vICMSST>311.53</vICMSST></ICMS10></ICMS>
+          <IPI><cEnq>999</cEnq><IPINT><CST>53</CST></IPINT></IPI>
+        </imposto>
+      </det>
+<det nItem="21">
+        <prod>
+          <cProd>CAM-21</cProd>
+          <cEAN>SEM GTIN</cEAN>
+          <xProd>Parafuso sextavado zincado com arruela de pressao e porca para fixacao de estrutura metalica</xProd>
+          <NCM>61091000</NCM>
+          <CFOP>5405</CFOP>
+          <uCom>UN</uCom>
+          <qCom>18.4922</qCom>
+          <vUnCom>124.3536000100</vUnCom>
+          <vProd>2299.57</vProd>
+          <cEANTrib>SEM GTIN</cEANTrib>
+          <uTrib>UN</uTrib>
+          <qTrib>18.4922</qTrib>
+          <vUnTrib>124.3536000100</vUnTrib>
+          <indTot>1</indTot>
+        </prod>
+        <imposto>
+          <ICMS><ICMS10><orig>0</orig><CST>10</CST><modBC>3</modBC><vBC>2299.57</vBC><pICMS>18.00</pICMS><vICMS>413.92</vICMS><modBCST>4</modBCST><vBCST>2299.57</vBCST><pICMSST>12.00</pICMSST><vICMSST>275.95</vICMSST></ICMS10></ICMS>
+          <IPI><cEnq>999</cEnq><IPINT><CST>53</CST></IPINT></IPI>
+        </imposto>
+      </det>
+<det nItem="22">
+        <prod>
+          <cProd>CAF-22</cProd>
+          <cEAN>SEM GTIN</cEAN>
+          <xProd>Parafuso sextavado zincado com arruela de pressao e porca para fixacao de estrutura metalica</xProd>
+          <NCM>09012100</NCM>
+          <CFOP>5405</CFOP>
+          <uCom>UN</uCom>
+          <qCom>9.1264</qCom>
+          <vUnCom>82.7958000100</vUnCom>
+          <vProd>755.63</vProd>
+          <cEANTrib>SEM GTIN</cEANTrib>
+          <uTrib>UN</uTrib>
+          <qTrib>9.1264</qTrib>
+          <vUnTrib>82.7958000100</vUnTrib>
+          <indTot>1</indTot>
+        </prod>
+        <imposto>
+          <ICMS><ICMS10><orig>0</orig><CST>10</CST><modBC>3</modBC><vBC>755.63</vBC><pICMS>18.00</pICMS><vICMS>136.01</vICMS><modBCST>4</modBCST><vBCST>755.63</vBCST><pICMSST>12.00</pICMSST><vICMSST>90.68</vICMSST></ICMS10></ICMS>
+          <IPI><cEnq>999</cEnq><IPINT><CST>53</CST></IPINT></IPI>
+        </imposto>
+      </det>
+<det nItem="23">
+        <prod>
+          <cProd>CAD-23</cProd>
+          <cEAN>SEM GTIN</cEAN>
+          <xProd>Parafuso sextavado zincado com arruela de pressao e porca para fixacao de estrutura metalica</xProd>
+          <NCM>48202000</NCM>
+          <CFOP>5405</CFOP>
+          <uCom>UN</uCom>
+          <qCom>18.4732</qCom>
+          <vUnCom>203.9918000100</vUnCom>
+          <vProd>3768.38</vProd>
+          <cEANTrib>SEM GTIN</cEANTrib>
+          <uTrib>UN</uTrib>
+          <qTrib>18.4732</qTrib>
+          <vUnTrib>203.9918000100</vUnTrib>
+          <indTot>1</indTot>
+        </prod>
+        <imposto>
+          <ICMS><ICMS10><orig>0</orig><CST>10</CST><modBC>3</modBC><vBC>3768.38</vBC><pICMS>18.00</pICMS><vICMS>678.31</vICMS><modBCST>4</modBCST><vBCST>3768.38</vBCST><pICMSST>12.00</pICMSST><vICMSST>452.21</vICMSST></ICMS10></ICMS>
+          <IPI><cEnq>999</cEnq><IPINT><CST>53</CST></IPINT></IPI>
+        </imposto>
+      </det>
+<det nItem="24">
+        <prod>
+          <cProd>CAN-24</cProd>
+          <cEAN>SEM GTIN</cEAN>
+          <xProd>Parafuso sextavado zincado com arruela de pressao e porca para fixacao de estrutura metalica</xProd>
+          <NCM>96081000</NCM>
+          <CFOP>5405</CFOP>
+          <uCom>UN</uCom>
+          <qCom>17.2638</qCom>
+          <vUnCom>206.9988000100</vUnCom>
+          <vProd>3573.59</vProd>
+          <cEANTrib>SEM GTIN</cEANTrib>
+          <uTrib>UN</uTrib>
+          <qTrib>17.2638</qTrib>
+          <vUnTrib>206.9988000100</vUnTrib>
+          <indTot>1</indTot>
+        </prod>
+        <imposto>
+          <ICMS><ICMS10><orig>0</orig><CST>10</CST><modBC>3</modBC><vBC>3573.59</vBC><pICMS>18.00</pICMS><vICMS>643.25</vICMS><modBCST>4</modBCST><vBCST>3573.59</vBCST><pICMSST>12.00</pICMSST><vICMSST>428.83</vICMSST></ICMS10></ICMS>
+          <IPI><cEnq>999</cEnq><IPINT><CST>53</CST></IPINT></IPI>
+        </imposto>
+      </det>
+<det nItem="25">
+        <prod>
+          <cProd>DET-25</cProd>
+          <cEAN>SEM GTIN</cEAN>
+          <xProd>Parafuso sextavado zincado com arruela de pressao e porca para fixacao de estrutura metalica</xProd>
+          <NCM>34025000</NCM>
+          <CFOP>5405</CFOP>
+          <uCom>UN</uCom>
+          <qCom>9.6924</qCom>
+          <vUnCom>6.8784000100</vUnCom>
+          <vProd>66.67</vProd>
+          <cEANTrib>SEM GTIN</cEANTrib>
+          <uTrib>UN</uTrib>
+          <qTrib>9.6924</qTrib>
+          <vUnTrib>6.8784000100</vUnTrib>
+          <indTot>1</indTot>
+        </prod>
+        <imposto>
+          <ICMS><ICMS10><orig>0</orig><CST>10</CST><modBC>3</modBC><vBC>66.67</vBC><pICMS>18.00</pICMS><vICMS>12.00</vICMS><modBCST>4</modBCST><vBCST>66.67</vBCST><pICMSST>12.00</pICMSST><vICMSST>8.00</vICMSST></ICMS10></ICMS>
+          <IPI><cEnq>999</cEnq><IPINT><CST>53</CST></IPINT></IPI>
+        </imposto>
+      </det>
+<det nItem="26">
+        <prod>
+          <cProd>ARR-26</cProd>
+          <cEAN>SEM GTIN</cEAN>
+          <xProd>Parafuso sextavado zincado com arruela de pressao e porca para fixacao de estrutura metalica</xProd>
+          <NCM>10063021</NCM>
+          <CFOP>5405</CFOP>
+          <uCom>UN</uCom>
+          <qCom>1.1620</qCom>
+          <vUnCom>53.5009000100</vUnCom>
+          <vProd>62.17</vProd>
+          <cEANTrib>SEM GTIN</cEANTrib>
+          <uTrib>UN</uTrib>
+          <qTrib>1.1620</qTrib>
+          <vUnTrib>53.5009000100</vUnTrib>
+          <indTot>1</indTot>
+        </prod>
+        <imposto>
+          <ICMS><ICMS10><orig>0</orig><CST>10</CST><modBC>3</modBC><vBC>62.17</vBC><pICMS>18.00</pICMS><vICMS>11.19</vICMS><modBCST>4</modBCST><vBCST>62.17</vBCST><pICMSST>12.00</pICMSST><vICMSST>7.46</vICMSST></ICMS10></ICMS>
+          <IPI><cEnq>999</cEnq><IPINT><CST>53</CST></IPINT></IPI>
+        </imposto>
+      </det>
+<det nItem="27">
+        <prod>
+          <cProd>FEI-27</cProd>
+          <cEAN>SEM GTIN</cEAN>
+          <xProd>Parafuso sextavado zincado com arruela de pressao e porca para fixacao de estrutura metalica</xProd>
+          <NCM>07133399</NCM>
+          <CFOP>5405</CFOP>
+          <uCom>UN</uCom>
+          <qCom>7.3114</qCom>
+          <vUnCom>193.5735000100</vUnCom>
+          <vProd>1415.29</vProd>
+          <cEANTrib>SEM GTIN</cEANTrib>
+          <uTrib>UN</uTrib>
+          <qTrib>7.3114</qTrib>
+          <vUnTrib>193.5735000100</vUnTrib>
+          <indTot>1</indTot>
+        </prod>
+        <imposto>
+          <ICMS><ICMS10><orig>0</orig><CST>10</CST><modBC>3</modBC><vBC>1415.29</vBC><pICMS>18.00</pICMS><vICMS>254.75</vICMS><modBCST>4</modBCST><vBCST>1415.29</vBCST><pICMSST>12.00</pICMSST><vICMSST>169.83</vICMSST></ICMS10></ICMS>
+          <IPI><cEnq>999</cEnq><IPINT><CST>53</CST></IPINT></IPI>
+        </imposto>
+      </det>
+<det nItem="28">
+        <prod>
+          <cProd>LEI-28</cProd>
+          <cEAN>SEM GTIN</cEAN>
+          <xProd>Parafuso sextavado zincado com arruela de pressao e porca para fixacao de estrutura metalica</xProd>
+          <NCM>04012010</NCM>
+          <CFOP>5405</CFOP>
+          <uCom>UN</uCom>
+          <qCom>16.6856</qCom>
+          <vUnCom>168.7837000100</vUnCom>
+          <vProd>2816.26</vProd>
+          <cEANTrib>SEM GTIN</cEANTrib>
+          <uTrib>UN</uTrib>
+          <qTrib>16.6856</qTrib>
+          <vUnTrib>168.7837000100</vUnTrib>
+          <indTot>1</indTot>
+        </prod>
+        <imposto>
+          <ICMS><ICMS10><orig>0</orig><CST>10</CST><modBC>3</modBC><vBC>2816.26</vBC><pICMS>18.00</pICMS><vICMS>506.93</vICMS><modBCST>4</modBCST><vBCST>2816.26</vBCST><pICMSST>12.00</pICMSST><vICMSST>337.95</vICMSST></ICMS10></ICMS>
+          <IPI><cEnq>999</cEnq><IPINT><CST>53</CST></IPINT></IPI>
+        </imposto>
+      </det>
+<det nItem="29">
+        <prod>
+          <cProd>SAB-29</cProd>
+          <cEAN>SEM GTIN</cEAN>
+          <xProd>Parafuso sextavado zincado com arruela de pressao e porca para fixacao de estrutura metalica</xProd>
+          <NCM>34011190</NCM>
+          <CFOP>5405</CFOP>
+          <uCom>UN</uCom>
+          <qCom>2.5651</qCom>
+          <vUnCom>246.8384000100</vUnCom>
+          <vProd>633.17</vProd>
+          <cEANTrib>SEM GTIN</cEANTrib>
+          <uTrib>UN</uTrib>
+          <qTrib>2.5651</qTrib>
+          <vUnTrib>246.8384000100</vUnTrib>
+          <indTot>1</indTot>
+        </prod>
+        <imposto>
+          <ICMS><ICMS10><orig>0</orig><CST>10</CST><modBC>3</modBC><vBC>633.17</vBC><pICMS>18.00</pICMS><vICMS>113.97</vICMS><modBCST>4</modBCST><vBCST>633.17</vBCST><pICMSST>12.00</pICMSST><vICMSST>75.98</vICMSST></ICMS10></ICMS>
+          <IPI><cEnq>999</cEnq><IPINT><CST>53</CST></IPINT></IPI>
+        </imposto>
+      </det>
+<det nItem="30">
+        <prod>
+          <cProd>PAP-30</cProd>
+          <cEAN>SEM GTIN</cEAN>
+          <xProd>Parafuso sextavado zincado com arruela de pressao e porca para fixacao de estrutura metalica</xProd>
+          <NCM>48025610</NCM>
+          <CFOP>5405</CFOP>
+          <uCom>UN</uCom>
+          <qCom>8.1830</qCom>
+          <vUnCom>82.5992000100</vUnCom>
+          <vProd>675.91</vProd>
+          <cEANTrib>SEM GTIN</cEANTrib>
+          <uTrib>UN</uTrib>
+          <qTrib>8.1830</qTrib>
+          <vUnTrib>82.5992000100</vUnTrib>
+          <indTot>1</indTot>
+        </prod>
+        <imposto>
+          <ICMS><ICMS10><orig>0</orig><CST>10</CST><modBC>3</modBC><vBC>675.91</vBC><pICMS>18.00</pICMS><vICMS>121.66</vICMS><modBCST>4</modBCST><vBCST>675.91</vBCST><pICMSST>12.00</pICMSST><vICMSST>81.11</vICMSST></ICMS10></ICMS>
+          <IPI><cEnq>999</cEnq><IPINT><CST>53</CST></IPINT></IPI>
+        </imposto>
+      </det>
+<det nItem="31">
+        <prod>
+          <cProd>CAM-31</cProd>
+          <cEAN>SEM GTIN</cEAN>
+          <xProd>Parafuso sextavado zincado com arruela de pressao e porca para fixacao de estrutura metalica</xProd>
+          <NCM>61091000</NCM>
+          <CFOP>5405</CFOP>
+          <uCom>UN</uCom>
+          <qCom>2.9228</qCom>
+          <vUnCom>63.8498000100</vUnCom>
+          <vProd>186.62</vProd>
+          <cEANTrib>SEM GTIN</cEANTrib>
+          <uTrib>UN</uTrib>
+          <qTrib>2.9228</qTrib>
+          <vUnTrib>63.8498000100</vUnTrib>
+          <indTot>1</indTot>
+        </prod>
+        <imposto>
+          <ICMS><ICMS10><orig>0</orig><CST>10</CST><modBC>3</modBC><vBC>186.62</vBC><pICMS>18.00</pICMS><vICMS>33.59</vICMS><modBCST>4</modBCST><vBCST>186.62</vBCST><pICMSST>12.00</pICMSST><vICMSST>22.39</vICMSST></ICMS10></ICMS>
+          <IPI><cEnq>999</cEnq><IPINT><CST>53</CST></IPINT></IPI>
+        </imposto>
+      </det>
+<det nItem="32">
+        <prod>
+          <cProd>CAF-32</cProd>
+          <cEAN>SEM GTIN</cEAN>
+          <xProd>Parafuso sextavado zincado com arruela de pressao e porca para fixacao de estrutura metalica</xProd>
+          <NCM>09012100</NCM>
+          <CFOP>5405</CFOP>
+          <uCom>UN</uCom>
+          <qCom>3.6345</qCom>
+          <vUnCom>182.3873000100</vUnCom>
+          <vProd>662.89</vProd>
+          <cEANTrib>SEM GTIN</cEANTrib>
+          <uTrib>UN</uTrib>
+          <qTrib>3.6345</qTrib>
+          <vUnTrib>182.3873000100</vUnTrib>
+          <indTot>1</indTot>
+        </prod>
+        <imposto>
+          <ICMS><ICMS10><orig>0</orig><CST>10</CST><modBC>3</modBC><vBC>662.89</vBC><pICMS>18.00</pICMS><vICMS>119.32</vICMS><modBCST>4</modBCST><vBCST>662.89</vBCST><pICMSST>12.00</pICMSST><vICMSST>79.55</vICMSST></ICMS10></ICMS>
+          <IPI><cEnq>999</cEnq><IPINT><CST>53</CST></IPINT></IPI>
+        </imposto>
+      </det>
+<det nItem="33">
+        <prod>
+          <cProd>CAD-33</cProd>
+          <cEAN>SEM GTIN</cEAN>
+          <xProd>Parafuso sextavado zincado com arruela de pressao e porca para fixacao de estrutura metalica</xProd>
+          <NCM>48202000</NCM>
+          <CFOP>5405</CFOP>
+          <uCom>UN</uCom>
+          <qCom>16.5582</qCom>
+          <vUnCom>80.0399000100</vUnCom>
+          <vProd>1325.32</vProd>
+          <cEANTrib>SEM GTIN</cEANTrib>
+          <uTrib>UN</uTrib>
+          <qTrib>16.5582</qTrib>
+          <vUnTrib>80.0399000100</vUnTrib>
+          <indTot>1</indTot>
+        </prod>
+        <imposto>
+          <ICMS><ICMS10><orig>0</orig><CST>10</CST><modBC>3</modBC><vBC>1325.32</vBC><pICMS>18.00</pICMS><vICMS>238.56</vICMS><modBCST>4</modBCST><vBCST>1325.32</vBCST><pICMSST>12.00</pICMSST><vICMSST>159.04</vICMSST></ICMS10></ICMS>
+          <IPI><cEnq>999</cEnq><IPINT><CST>53</CST></IPINT></IPI>
+        </imposto>
+      </det>
+<det nItem="34">
+        <prod>
+          <cProd>CAN-34</cProd>
+          <cEAN>SEM GTIN</cEAN>
+          <xProd>Parafuso sextavado zincado com arruela de pressao e porca para fixacao de estrutura metalica</xProd>
+          <NCM>96081000</NCM>
+          <CFOP>5405</CFOP>
+          <uCom>UN</uCom>
+          <qCom>8.4215</qCom>
+          <vUnCom>133.3683000100</vUnCom>
+          <vProd>1123.16</vProd>
+          <cEANTrib>SEM GTIN</cEANTrib>
+          <uTrib>UN</uTrib>
+          <qTrib>8.4215</qTrib>
+          <vUnTrib>133.3683000100</vUnTrib>
+          <indTot>1</indTot>
+        </prod>
+        <imposto>
+          <ICMS><ICMS10><orig>0</orig><CST>10</CST><modBC>3</modBC><vBC>1123.16</vBC><pICMS>18.00</pICMS><vICMS>202.17</vICMS><modBCST>4</modBCST><vBCST>1123.16</vBCST><pICMSST>12.00</pICMSST><vICMSST>134.78</vICMSST></ICMS10></ICMS>
+          <IPI><cEnq>999</cEnq><IPINT><CST>53</CST></IPINT></IPI>
+        </imposto>
+      </det>
+<det nItem="35">
+        <prod>
+          <cProd>DET-35</cProd>
+          <cEAN>SEM GTIN</cEAN>
+          <xProd>Parafuso sextavado zincado com arruela de pressao e porca para fixacao de estrutura metalica</xProd>
+          <NCM>34025000</NCM>
+          <CFOP>5405</CFOP>
+          <uCom>UN</uCom>
+          <qCom>19.0851</qCom>
+          <vUnCom>58.5737000100</vUnCom>
+          <vProd>1117.88</vProd>
+          <cEANTrib>SEM GTIN</cEANTrib>
+          <uTrib>UN</uTrib>
+          <qTrib>19.0851</qTrib>
+          <vUnTrib>58.5737000100</vUnTrib>
+          <indTot>1</indTot>
+        </prod>
+        <imposto>
+          <ICMS><ICMS10><orig>0</orig><CST>10</CST><modBC>3</modBC><vBC>1117.88</vBC><pICMS>18.00</pICMS><vICMS>201.22</vICMS><modBCST>4</modBCST><vBCST>1117.88</vBCST><pICMSST>12.00</pICMSST><vICMSST>134.15</vICMSST></ICMS10></ICMS>
+          <IPI><cEnq>999</cEnq><IPINT><CST>53</CST></IPINT></IPI>
+        </imposto>
+      </det>
+<det nItem="36">
+        <prod>
+          <cProd>ARR-36</cProd>
+          <cEAN>SEM GTIN</cEAN>
+          <xProd>Parafuso sextavado zincado com arruela de pressao e porca para fixacao de estrutura metalica</xProd>
+          <NCM>10063021</NCM>
+          <CFOP>5405</CFOP>
+          <uCom>UN</uCom>
+          <qCom>12.2532</qCom>
+          <vUnCom>168.6760000100</vUnCom>
+          <vProd>2066.82</vProd>
+          <cEANTrib>SEM GTIN</cEANTrib>
+          <uTrib>UN</uTrib>
+          <qTrib>12.2532</qTrib>
+          <vUnTrib>168.6760000100</vUnTrib>
+          <indTot>1</indTot>
+        </prod>
+        <imposto>
+          <ICMS><ICMS10><orig>0</orig><CST>10</CST><modBC>3</modBC><vBC>2066.82</vBC><pICMS>18.00</pICMS><vICMS>372.03</vICMS><modBCST>4</modBCST><vBCST>2066.82</vBCST><pICMSST>12.00</pICMSST><vICMSST>248.02</vICMSST></ICMS10></ICMS>
+          <IPI><cEnq>999</cEnq><IPINT><CST>53</CST></IPINT></IPI>
+        </imposto>
+      </det>
+<det nItem="37">
+        <prod>
+          <cProd>FEI-37</cProd>
+          <cEAN>SEM GTIN</cEAN>
+          <xProd>Parafuso sextavado zincado com arruela de pressao e porca para fixacao de estrutura metalica</xProd>
+          <NCM>07133399</NCM>
+          <CFOP>5405</CFOP>
+          <uCom>UN</uCom>
+          <qCom>5.4898</qCom>
+          <vUnCom>99.2613000100</vUnCom>
+          <vProd>544.92</vProd>
+          <cEANTrib>SEM GTIN</cEANTrib>
+          <uTrib>UN</uTrib>
+          <qTrib>5.4898</qTrib>
+          <vUnTrib>99.2613000100</vUnTrib>
+          <indTot>1</indTot>
+        </prod>
+        <imposto>
+          <ICMS><ICMS10><orig>0</orig><CST>10</CST><modBC>3</modBC><vBC>544.92</vBC><pICMS>18.00</pICMS><vICMS>98.09</vICMS><modBCST>4</modBCST><vBCST>544.92</vBCST><pICMSST>12.00</pICMSST><vICMSST>65.39</vICMSST></ICMS10></ICMS>
+          <IPI><cEnq>999</cEnq><IPINT><CST>53</CST></IPINT></IPI>
+        </imposto>
+      </det>
+<det nItem="38">
+        <prod>
+          <cProd>LEI-38</cProd>
+          <cEAN>SEM GTIN</cEAN>
+          <xProd>Parafuso sextavado zincado com arruela de pressao e porca para fixacao de estrutura metalica</xProd>
+          <NCM>04012010</NCM>
+          <CFOP>5405</CFOP>
+          <uCom>UN</uCom>
+          <qCom>9.5537</qCom>
+          <vUnCom>249.8007000100</vUnCom>
+          <vProd>2386.52</vProd>
+          <cEANTrib>SEM GTIN</cEANTrib>
+          <uTrib>UN</uTrib>
+          <qTrib>9.5537</qTrib>
+          <vUnTrib>249.8007000100</vUnTrib>
+          <indTot>1</indTot>
+        </prod>
+        <imposto>
+          <ICMS><ICMS10><orig>0</orig><CST>10</CST><modBC>3</modBC><vBC>2386.52</vBC><pICMS>18.00</pICMS><vICMS>429.57</vICMS><modBCST>4</modBCST><vBCST>2386.52</vBCST><pICMSST>12.00</pICMSST><vICMSST>286.38</vICMSST></ICMS10></ICMS>
+          <IPI><cEnq>999</cEnq><IPINT><CST>53</CST></IPINT></IPI>
+        </imposto>
+      </det>
+      <total>
+        <ICMSTot>
+          <vBC>64533.36</vBC>
+          <vICMS>11616.01</vICMS>
+          <vICMSDeson>0.00</vICMSDeson>
+          <vFCP>0.00</vFCP>
+          <vBCST>64533.36</vBCST>
+          <vST>7744.01</vST>
+          <vFCPST>0.00</vFCPST>
+          <vFCPSTRet>0.00</vFCPSTRet>
+          <vProd>64533.36</vProd>
+          <vFrete>0.00</vFrete>
+          <vSeg>0.00</vSeg>
+          <vDesc>0.00</vDesc>
+          <vII>0.00</vII>
+          <vIPI>0.00</vIPI>
+          <vIPIDevol>0.00</vIPIDevol>
+          <vPIS>0.00</vPIS>
+          <vCOFINS>0.00</vCOFINS>
+          <vOutro>0.00</vOutro>
+          <vNF>72277.37</vNF>
+        </ICMSTot>
+      </total>
+      <transp><modFrete>9</modFrete></transp>
+      <pag>
+        <detPag>
+          <tPag>01</tPag>
+          <vPag>72277.37</vPag>
+        </detPag>
+      </pag>
+    </infNFe>
+  </NFe>
+  <protNFe versao="4.00">
+    <infProt>
+      <tpAmb>2</tpAmb>
+      <verAplic>SYN</verAplic>
+      <chNFe>23240421844654162660550030000000781834279332</chNFe>
+      <dhRecbto>2024-04-10T10:00:00-03:00</dhRecbto>
+      <nProt>135240000000078</nProt>
+      <digVal>AAAAAAAAAAAAAAAAAAAAAAAAAAA=</digVal>
+      <cStat>100</cStat>
+      <xMotivo>Autorizado o uso da NF-e</xMotivo>
+    </infProt>
+  </protNFe>
+</nfeProc>

@@ -1,0 +1,109 @@
+{
+  "header": {
+    "access_key": "35240589056907473831550020000000111492109075",
+    "state": "SP",
+    "model": "55",
+    "series": "2",
+    "number": "11",
+    "issue_date": "2024-05-03",
+    "issuer_cnpj": "89056907473831",
+    "recipient_cnpj_cpf": "89441937688396",
+    "total_products": 766319,
+    "freight": 0,
+    "insurance": 0,
+    "discount": 1593,
+    "ipi_total": 0,
+    "other_expenses": 0,
+    "icms_total": 137937,
+    "icms_st_total": 0,
+    "invoice_total": 764726,
+    "unsupported_components": {
+      "import_tax": false,
+      "returned_ipi": false,
+      "icms_relief": false,
+      "fcp_st": false
+    }
+  },
+  "line_items": [
+    {
+      "printed_order": 1,
+      "product_code": "CAM-01",
+      "description": "Camiseta algodao",
+      "ncm": "61091000",
+      "cfop": "5102",
+      "quantity": "17.3838",
+      "unit_price": "26.5322",
+      "item_total": 46123
+    },
+    {
+      "printed_order": 2,
+      "product_code": "CAF-02",
+      "description": "Cafe torrado",
+      "ncm": "09012100",
+      "cfop": "5102",
+      "quantity": "16.2046",
+      "unit_price": "207.8565",
+      "item_total": 336823
+    },
+    {
+      "printed_order": 3,
+      "product_code": "CAD-03",
+      "description": "Caderno brochura",
+      "ncm": "48202000",
+      "cfop": "5102",
+      "quantity": "10.5083",
+      "unit_price": "146.9539",
+      "item_total": 154424
+    },
+    {
+      "printed_order": 4,
+      "product_code": "CAN-04",
+      "description": "Caneta azul",
+      "ncm": "96081000",
+      "cfop": "5102",
+      "quantity": "3.7501",
+      "unit_price": "60.4056",
+      "item_total": 22653
+    },
+    {
+      "printed_order": 5,
+      "product_code": "DET-05",
+      "description": "Detergente neutro",
+      "ncm": "34025000",
+      "cfop": "5102",
+      "quantity": "6.2477",
+      "unit_price": "206.0682",
+      "item_total": 128745
+    },
+    {
+      "printed_order": 6,
+      "product_code": "ARR-06",
+      "description": "Arroz tipo 1",
+      "ncm": "10063021",
+      "cfop": "5102",
+      "quantity": "10.0028",
+      "unit_price": "16.3309",
+      "item_total": 16335
+    },
+    {
+      "printed_order": 7,
+      "product_code": "FEI-07",
+      "description": "Feijao carioca",
+      "ncm": "07133399",
+      "cfop": "5102",
+      "quantity": "2.4582",
+      "unit_price": "71.6169",
+      "item_total": 17605
+    },
+    {
+      "printed_order": 8,
+      "product_code": "LEI-08",
+      "description": "Leite integral",
+      "ncm": "04012010",
+      "cfop": "5102",
+      "quantity": "10.4069",
+      "unit_price": "41.9061",
+      "item_total": 43611
+    }
+  ]
+}

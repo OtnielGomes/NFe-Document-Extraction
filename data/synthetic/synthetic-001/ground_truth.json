@@ -1,0 +1,429 @@
+{
+  "header": {
+    "access_key": "35240983606369122950550010000000011645576624",
+    "state": "SP",
+    "model": "55",
+    "series": "1",
+    "number": "1",
+    "issue_date": "2024-09-07",
+    "issuer_cnpj": "83606369122950",
+    "recipient_cnpj_cpf": "00149687169118",
+    "total_products": 4457928,
+    "freight": 0,
+    "insurance": 0,
+    "discount": 0,
+    "ipi_total": 222897,
+    "other_expenses": 0,
+    "icms_total": 802431,
+    "icms_st_total": 534951,
+    "invoice_total": 5215776,
+    "unsupported_components": {
+      "import_tax": false,
+      "returned_ipi": false,
+      "icms_relief": false,
+      "fcp_st": false
+    }
+  },
+  "line_items": [
+    {
+      "printed_order": 1,
+      "product_code": "CAM-01",
+      "description": "Parafuso sextavado zincado com arruela de pressao e porca para fixacao de estrutura metalica",
+      "ncm": "61091000",
+      "cfop": "5405",
+      "quantity": "11.1933",
+      "unit_price": "197.7105",
+      "item_total": 221303
+    },
+    {
+      "printed_order": 2,
+      "product_code": "CAF-02",
+      "description": "Parafuso sextavado zincado com arruela de pressao e porca para fixacao de estrutura metalica",
+      "ncm": "09012100",
+      "cfop": "5405",
+      "quantity": "7.8787",
+      "unit_price": "180.2866",
+      "item_total": 142042
+    },
+    {
+      "printed_order": 3,
+      "product_code": "CAD-03",
+      "description": "Parafuso sextavado zincado com arruela de pressao e porca para fixacao de estrutura metalica",
+      "ncm": "48202000",
+      "cfop": "5405",
+      "quantity": "8.4741",
+      "unit_price": "195.7756",
+      "item_total": 165902
+    },
+    {
+      "printed_order": 4,
+      "product_code": "CAN-04",
+      "description": "Parafuso sextavado zincado com arruela de pressao e porca para fixacao de estrutura metalica",
+      "ncm": "96081000",
+      "cfop": "5405",
+      "quantity": "12.1084",
+      "unit_price": "42.3375",
+      "item_total": 51264
+    },
+    {
+      "printed_order": 5,
+      "product_code": "DET-05",
+      "description": "Parafuso sextavado zincado com arruela de pressao e porca para fixacao de estrutura metalica",
+      "ncm": "34025000",
+      "cfop": "5405",
+      "quantity": "5.0228",
+      "unit_price": "65.3746",
+      "item_total": 32836
+    },
+    {
+      "printed_order": 6,
+      "product_code": "ARR-06",
+      "description": "Parafuso sextavado zincado com arruela de pressao e porca para fixacao de estrutura metalica",
+      "ncm": "10063021",
+      "cfop": "5405",
+      "quantity": "17.1275",
+      "unit_price": "67.2066",
+      "item_total": 115108
+    },
+    {
+      "printed_order": 7,
+      "product_code": "FEI-07",
+      "description": "Parafuso sextavado zincado com arruela de pressao e porca para fixacao de estrutura metalica",
+      "ncm": "07133399",
+      "cfop": "5405",
+      "quantity": "1.8663",
+      "unit_price": "157.6329",
+      "item_total": 29419
+    },
+    {
+      "printed_order": 8,
+      "product_code": "LEI-08",
+      "description": "Parafuso sextavado zincado com arruela de pressao e porca para fixacao de estrutura metalica",
+      "ncm": "04012010",
+      "cfop": "5405",
+      "quantity": "10.1098",
+      "unit_price": "197.4897",
+      "item_total": 199658
+    },
+    {
+      "printed_order": 9,
+      "product_code": "SAB-09",
+      "description": "Parafuso sextavado zincado com arruela de pressao e porca para fixacao de estrutura metalica",
+      "ncm": "34011190",
+      "cfop": "5405",
+      "quantity": "3.9876",
+      "unit_price": "232.0520",
+      "item_total": 92533
+    },
+    {
+      "printed_order": 10,
+      "product_code": "PAP-10",
+      "description": "Parafuso sextavado zincado com arruela de pressao e porca para fixacao de estrutura metalica",
+      "ncm": "48025610",
+      "cfop": "5405",
+      "quantity": "6.6603",
+      "unit_price": "46.7366",
+      "item_total": 31128
+    },
+    {
+      "printed_order": 11,
+      "product_code": "CAM-11",
+      "description": "Parafuso sextavado zincado com arruela de pressao e porca para fixacao de estrutura metalica",
+      "ncm": "61091000",
+      "cfop": "5405",
+      "quantity": "7.2728",
+      "unit_price": "68.2537",
+      "item_total": 49640
+    },
+    {
+      "printed_order": 12,
+      "product_code": "CAF-12",
+      "description": "Parafuso sextavado zincado com arruela de pressao e porca para fixacao de estrutura metalica",
+      "ncm": "09012100",
+      "cfop": "5405",
+      "quantity": "19.6705",
+      "unit_price": "120.8987",
+      "item_total": 237814
+    },
+    {
+      "printed_order": 13,
+      "product_code": "CAD-13",
+      "description": "Parafuso sextavado zincado com arruela de pressao e porca para fixacao de estrutura metalica",
+      "ncm": "48202000",
+      "cfop": "5405",
+      "quantity": "17.6158",
+      "unit_price": "99.1365",
+      "item_total": 174637
+    },
+    {
+      "printed_order": 14,
+      "product_code": "CAN-14",
+      "description": "Parafuso sextavado zincado com arruela de pressao e porca para fixacao de estrutura metalica",
+      "ncm": "96081000",
+      "cfop": "5405",
+      "quantity": "0.8691",
+      "unit_price": "202.6805",
+      "item_total": 17615
+    },
+    {
+      "printed_order": 15,
+      "product_code": "DET-15",
+      "description": "Parafuso sextavado zincado com arruela de pressao e porca para fixacao de estrutura metalica",
+      "ncm": "34025000",
+      "cfop": "5405",
+      "quantity": "0.8414",
+      "unit_price": "144.9092",
+      "item_total": 12193
+    },
+    {
+      "printed_order": 16,
+      "product_code": "ARR-16",
+      "description": "Parafuso sextavado zincado com arruela de pressao e porca para fixacao de estrutura metalica",
+      "ncm": "10063021",
+      "cfop": "5405",
+      "quantity": "19.7132",
+      "unit_price": "155.2564",
+      "item_total": 306060
+    },
+    {
+      "printed_order": 17,
+      "product_code": "FEI-17",
+      "description": "Parafuso sextavado zincado com arruela de pressao e porca para fixacao de estrutura metalica",
+      "ncm": "07133399",
+      "cfop": "5405",
+      "quantity": "8.2855",
+      "unit_price": "25.2017",
+      "item_total": 20881
+    },
+    {
+      "printed_order": 18,
+      "product_code": "LEI-18",
+      "description": "Parafuso sextavado zincado com arruela de pressao e porca para fixacao de estrutura metalica",
+      "ncm": "04012010",
+      "cfop": "5405",
+      "quantity": "18.0281",
+      "unit_price": "9.6194",
+      "item_total": 17342
+    },
+    {
+      "printed_order": 19,
+      "product_code": "SAB-19",
+      "description": "Parafuso sextavado zincado com arruela de pressao e porca para fixacao de estrutura metalica",
+      "ncm": "34011190",
+      "cfop": "5405",
+      "quantity": "17.6637",
+      "unit_price": "192.0363",
+      "item_total": 339207
+    },
+    {
+      "printed_order": 20,
+      "product_code": "PAP-20",
+      "description": "Parafuso sextavado zincado com arruela de pressao e porca para fixacao de estrutura metalica",
+      "ncm": "48025610",
+      "cfop": "5405",
+      "quantity": "12.3662",
+      "unit_price": "65.9183",
+      "item_total": 81516
+    },
+    {
+      "printed_order": 21,
+      "product_code": "CAM-21",
+      "description": "Parafuso sextavado zincado com arruela de pressao e porca para fixacao de estrutura metalica",
+      "ncm": "61091000",
+      "cfop": "5405",
+      "quantity": "3.0911",
+      "unit_price": "136.5171",
+      "item_total": 42199
+    },
+    {
+      "printed_order": 22,
+      "product_code": "CAF-22",
+      "description": "Parafuso sextavado zincado com arruela de pressao e porca para fixacao de estrutura metalica",
+      "ncm": "09012100",
+      "cfop": "5405",
+      "quantity": "7.6311",
+      "unit_price": "190.8703",
+      "item_total": 145655
+    },
+    {
+      "printed_order": 23,
+      "product_code": "CAD-23",
+      "description": "Parafuso sextavado zincado com arruela de pressao e porca para fixacao de estrutura metalica",
+      "ncm": "48202000",
+      "cfop": "5405",
+      "quantity": "17.6808",
+      "unit_price": "101.1419",
+      "item_total": 178827
+    },
+    {
+      "printed_order": 24,
+      "product_code": "CAN-24",
+      "description": "Parafuso sextavado zincado com arruela de pressao e porca para fixacao de estrutura metalica",
+      "ncm": "96081000",
+      "cfop": "5405",
+      "quantity": "19.1182",
+      "unit_price": "68.9630",
+      "item_total": 131845
+    },
+    {
+      "printed_order": 25,
+      "product_code": "DET-25",
+      "description": "Parafuso sextavado zincado com arruela de pressao e porca para fixacao de estrutura metalica",
+      "ncm": "34025000",
+      "cfop": "5405",
+      "quantity": "0.8791",
+      "unit_price": "84.8149",
+      "item_total": 7456
+    },
+    {
+      "printed_order": 26,
+      "product_code": "ARR-26",
+      "description": "Parafuso sextavado zincado com arruela de pressao e porca para fixacao de estrutura metalica",
+      "ncm": "10063021",
+      "cfop": "5405",
+      "quantity": "18.7383",
+      "unit_price": "10.9565",
+      "item_total": 20531
+    },
+    {
+      "printed_order": 27,
+      "product_code": "FEI-27",
+      "description": "Parafuso sextavado zincado com arruela de pressao e porca para fixacao de estrutura metalica",
+      "ncm": "07133399",
+      "cfop": "5405",
+      "quantity": "15.0660",
+      "unit_price": "97.1671",
+      "item_total": 146392
+    },
+    {
+      "printed_order": 28,
+      "product_code": "LEI-28",
+      "description": "Parafuso sextavado zincado com arruela de pressao e porca para fixacao de estrutura metalica",
+      "ncm": "04012010",
+      "cfop": "5405",
+      "quantity": "17.2090",
+      "unit_price": "33.3008",
+      "item_total": 57307
+    },
+    {
+      "printed_order": 29,
+      "product_code": "SAB-29",
+      "description": "Parafuso sextavado zincado com arruela de pressao e porca para fixacao de estrutura metalica",
+      "ncm": "34011190",
+      "cfop": "5405",
+      "quantity": "16.1896",
+      "unit_price": "168.7212",
+      "item_total": 273153
+    },
+    {
+      "printed_order": 30,
+      "product_code": "PAP-30",
+      "description": "Parafuso sextavado zincado com arruela de pressao e porca para fixacao de estrutura metalica",
+      "ncm": "48025610",
+      "cfop": "5405",
+      "quantity": "18.5261",
+      "unit_price": "153.2788",
+      "item_total": 283966
+    },
+    {
+      "printed_order": 31,
+      "product_code": "CAM-31",
+      "description": "Parafuso sextavado zincado com arruela de pressao e porca para fixacao de estrutura metalica",
+      "ncm": "61091000",
+      "cfop": "5405",
+      "quantity": "17.8396",
+      "unit_price": "131.2948",
+      "item_total": 234225
+    },
+    {
+      "printed_order": 32,
+      "product_code": "CAF-32",
+      "description": "Parafuso sextavado zincado com arruela de pressao e porca para fixacao de estrutura metalica",
+      "ncm": "09012100",
+      "cfop": "5405",
+      "quantity": "4.8360",
+      "unit_price": "196.8089",
+      "item_total": 95177
+    },
+    {
+      "printed_order": 33,
+      "product_code": "CAD-33",
+      "description": "Parafuso sextavado zincado com arruela de pressao e porca para fixacao de estrutura metalica",
+      "ncm": "48202000",
+      "cfop": "5405",
+      "quantity": "9.4755",
+      "unit_price": "119.2588",
+      "item_total": 113004
+    },
+    {
+      "printed_order": 34,
+      "product_code": "CAN-34",
+      "description": "Parafuso sextavado zincado com arruela de pressao e porca para fixacao de estrutura metalica",
+      "ncm": "96081000",
+      "cfop": "5405",
+      "quantity": "1.7532",
+      "unit_price": "196.8093",
+      "item_total": 34505
+    },
+    {
+      "printed_order": 35,
+      "product_code": "DET-35",
+      "description": "Parafuso sextavado zincado com arruela de pressao e porca para fixacao de estrutura metalica",
+      "ncm": "34025000",
+      "cfop": "5405",
+      "quantity": "4.2823",
+      "unit_price": "101.3869",
+      "item_total": 43417
+    },
+    {
+      "printed_order": 36,
+      "product_code": "ARR-36",
+      "description": "Parafuso sextavado zincado com arruela de pressao e porca para fixacao de estrutura metalica",
+      "ncm": "10063021",
+      "cfop": "5405",
+      "quantity": "4.6045",
+      "unit_price": "88.0640",
+      "item_total": 40549
+    },
+    {
+      "printed_order": 37,
+      "product_code": "FEI-37",
+      "description": "Parafuso sextavado zincado com arruela de pressao e porca para fixacao de estrutura metalica",
+      "ncm": "07133399",
+      "cfop": "5405",
+      "quantity": "1.1514",
+      "unit_price": "181.1268",
+      "item_total": 20855
+    },
+    {
+      "printed_order": 38,
+      "product_code": "LEI-38",
+      "description": "Parafuso sextavado zincado com arruela de pressao e porca para fixacao de estrutura metalica",
+      "ncm": "04012010",
+      "cfop": "5405",
+      "quantity": "19.0428",
+      "unit_price": "114.0445",
+      "item_total": 217173
+    },
+    {
+      "printed_order": 39,
+      "product_code": "SAB-39",
+      "description": "Parafuso sextavado zincado com arruela de pressao e porca para fixacao de estrutura metalica",
+      "ncm": "34011190",
+      "cfop": "5405",
+      "quantity": "0.1645",
+      "unit_price": "194.2409",
+      "item_total": 3195
+    },
+    {
+      "printed_order": 40,
+      "product_code": "PAP-40",
+      "description": "Parafuso sextavado zincado com arruela de pressao e porca para fixacao de estrutura metalica",
+      "ncm": "48025610",
+      "cfop": "5405",
+      "quantity": "1.5956",
+      "unit_price": "190.5161",
+      "item_total": 30399
+    }
+  ]
+}

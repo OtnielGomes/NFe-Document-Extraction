@@ -1,0 +1,49 @@
+{
+  "header": {
+    "access_key": "41240806928512386293550010000000341166439728",
+    "state": "PR",
+    "model": "55",
+    "series": "1",
+    "number": "34",
+    "issue_date": "2024-08-06",
+    "issuer_cnpj": "06928512386293",
+    "recipient_cnpj_cpf": "47145236788",
+    "total_products": 137173,
+    "freight": 0,
+    "insurance": 0,
+    "discount": 912,
+    "ipi_total": 0,
+    "other_expenses": 0,
+    "icms_total": 24691,
+    "icms_st_total": 16461,
+    "invoice_total": 152722,
+    "unsupported_components": {
+      "import_tax": false,
+      "returned_ipi": false,
+      "icms_relief": false,
+      "fcp_st": false
+    }
+  },
+  "line_items": [
+    {
+      "printed_order": 1,
+      "product_code": "CAM-01",
+      "description": "Camiseta algodao",
+      "ncm": "61091000",
+      "cfop": "5405",
+      "quantity": "8.4611",
+      "unit_price": "16.4178",
+      "item_total": 13891
+    },
+    {
+      "printed_order": 2,
+      "product_code": "CAF-02",
+      "description": "Cafe torrado",
+      "ncm": "09012100",
+      "cfop": "5405",
+      "quantity": "8.0220",
+      "unit_price": "153.6802",
+      "item_total": 123282
+    }
+  ]
+}

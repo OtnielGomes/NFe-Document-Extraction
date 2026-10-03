@@ -1,0 +1,89 @@
+{
+  "header": {
+    "access_key": "26240149258380894744550010000000071412868450",
+    "state": "PE",
+    "model": "55",
+    "series": "1",
+    "number": "7",
+    "issue_date": "2024-01-07",
+    "issuer_cnpj": "49258380894744",
+    "recipient_cnpj_cpf": "91006710106330",
+    "total_products": 504300,
+    "freight": 4497,
+    "insurance": 0,
+    "discount": 217,
+    "ipi_total": 0,
+    "other_expenses": 0,
+    "icms_total": 90775,
+    "icms_st_total": 0,
+    "invoice_total": 508580,
+    "unsupported_components": {
+      "import_tax": false,
+      "returned_ipi": false,
+      "icms_relief": false,
+      "fcp_st": false
+    }
+  },
+  "line_items": [
+    {
+      "printed_order": 1,
+      "product_code": "CAM-01",
+      "description": "Camiseta algodao",
+      "ncm": "61091000",
+      "cfop": "5102",
+      "quantity": "5.8714",
+      "unit_price": "233.0594",
+      "item_total": 136838
+    },
+    {
+      "printed_order": 2,
+      "product_code": "CAF-02",
+      "description": "Cafe torrado",
+      "ncm": "09012100",
+      "cfop": "5102",
+      "quantity": "3.0327",
+      "unit_price": "58.6819",
+      "item_total": 17796
+    },
+    {
+      "printed_order": 3,
+      "product_code": "CAD-03",
+      "description": "Caderno brochura",
+      "ncm": "48202000",
+      "cfop": "5102",
+      "quantity": "8.1715",
+      "unit_price": "203.1783",
+      "item_total": 166027
+    },
+    {
+      "printed_order": 4,
+      "product_code": "CAN-04",
+      "description": "Caneta azul",
+      "ncm": "96081000",
+      "cfop": "5102",
+      "quantity": "2.2973",
+      "unit_price": "111.0118",
+      "item_total": 25503
+    },
+    {
+      "printed_order": 5,
+      "product_code": "DET-05",
+      "description": "Detergente neutro",
+      "ncm": "34025000",
+      "cfop": "5102",
+      "quantity": "10.5539",
+      "unit_price": "131.7297",
+      "item_total": 139026
+    },
+    {
+      "printed_order": 6,
+      "product_code": "ARR-06",
+      "description": "Arroz tipo 1",
+      "ncm": "10063021",
+      "cfop": "5102",
+      "quantity": "3.4779",
+      "unit_price": "54.9477",
+      "item_total": 19110
+    }
+  ]
+}

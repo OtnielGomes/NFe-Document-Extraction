@@ -1,0 +1,59 @@
+{
+  "header": {
+    "access_key": "29240435759283744320550020000000861944771966",
+    "state": "BA",
+    "model": "55",
+    "series": "2",
+    "number": "86",
+    "issue_date": "2024-04-04",
+    "issuer_cnpj": "35759283744320",
+    "recipient_cnpj_cpf": "66936031064",
+    "total_products": 317060,
+    "freight": 0,
+    "insurance": 0,
+    "discount": 0,
+    "ipi_total": 15853,
+    "other_expenses": 0,
+    "icms_total": 57070,
+    "icms_st_total": 0,
+    "invoice_total": 332913,
+    "unsupported_components": {
+      "import_tax": false,
+      "returned_ipi": false,
+      "icms_relief": false,
+      "fcp_st": false
+    }
+  },
+  "line_items": [
+    {
+      "printed_order": 1,
+      "product_code": "CAM-01",
+      "description": "Camiseta algodao",
+      "ncm": "61091000",
+      "cfop": "5102",
+      "quantity": "3.8796",
+      "unit_price": "238.5312",
+      "item_total": 92541
+    },
+    {
+      "printed_order": 2,
+      "product_code": "CAF-02",
+      "description": "Cafe torrado",
+      "ncm": "09012100",
+      "cfop": "5102",
+      "quantity": "19.6944",
+      "unit_price": "22.3566",
+      "item_total": 44030
+    },
+    {
+      "printed_order": 3,
+      "product_code": "CAD-03",
+      "description": "Caderno brochura",
+      "ncm": "48202000",
+      "cfop": "5102",
+      "quantity": "7.5838",
+      "unit_price": "237.9928",
+      "item_total": 180489
+    }
+  ]
+}

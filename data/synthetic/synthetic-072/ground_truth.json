@@ -1,0 +1,159 @@
+{
+  "header": {
+    "access_key": "33240197199171029105550030000000721228174708",
+    "state": "RJ",
+    "model": "55",
+    "series": "3",
+    "number": "72",
+    "issue_date": "2024-01-19",
+    "issuer_cnpj": "97199171029105",
+    "recipient_cnpj_cpf": "08779043882032",
+    "total_products": 1635097,
+    "freight": 2946,
+    "insurance": 0,
+    "discount": 1583,
+    "ipi_total": 0,
+    "other_expenses": 0,
+    "icms_total": 294316,
+    "icms_st_total": 0,
+    "invoice_total": 1636460,
+    "unsupported_components": {
+      "import_tax": false,
+      "returned_ipi": false,
+      "icms_relief": false,
+      "fcp_st": false
+    }
+  },
+  "line_items": [
+    {
+      "printed_order": 1,
+      "product_code": "CAM-01",
+      "description": "Camiseta algodao",
+      "ncm": "61091000",
+      "cfop": "5102",
+      "quantity": "0.6344",
+      "unit_price": "72.5910",
+      "item_total": 4605
+    },
+    {
+      "printed_order": 2,
+      "product_code": "CAF-02",
+      "description": "Cafe torrado",
+      "ncm": "09012100",
+      "cfop": "5102",
+      "quantity": "15.1810",
+      "unit_price": "44.2064",
+      "item_total": 67110
+    },
+    {
+      "printed_order": 3,
+      "product_code": "CAD-03",
+      "description": "Caderno brochura",
+      "ncm": "48202000",
+      "cfop": "5102",
+      "quantity": "2.1407",
+      "unit_price": "7.9384",
+      "item_total": 1699
+    },
+    {
+      "printed_order": 4,
+      "product_code": "CAN-04",
+      "description": "Caneta azul",
+      "ncm": "96081000",
+      "cfop": "5102",
+      "quantity": "1.0976",
+      "unit_price": "143.0105",
+      "item_total": 15697
+    },
+    {
+      "printed_order": 5,
+      "product_code": "DET-05",
+      "description": "Detergente neutro",
+      "ncm": "34025000",
+      "cfop": "5102",
+      "quantity": "15.6480",
+      "unit_price": "183.1597",
+      "item_total": 286608
+    },
+    {
+      "printed_order": 6,
+      "product_code": "ARR-06",
+      "description": "Arroz tipo 1",
+      "ncm": "10063021",
+      "cfop": "5102",
+      "quantity": "11.8693",
+      "unit_price": "225.6063",
+      "item_total": 267779
+    },
+    {
+      "printed_order": 7,
+      "product_code": "FEI-07",
+      "description": "Feijao carioca",
+      "ncm": "07133399",
+      "cfop": "5102",
+      "quantity": "16.9348",
+      "unit_price": "117.7222",
+      "item_total": 199360
+    },
+    {
+      "printed_order": 8,
+      "product_code": "LEI-08",
+      "description": "Leite integral",
+      "ncm": "04012010",
+      "cfop": "5102",
+      "quantity": "13.4420",
+      "unit_price": "248.9897",
+      "item_total": 334692
+    },
+    {
+      "printed_order": 9,
+      "product_code": "SAB-09",
+      "description": "Sabonete barra",
+      "ncm": "34011190",
+      "cfop": "5102",
+      "quantity": "9.4488",
+      "unit_price": "167.5229",
+      "item_total": 158289
+    },
+    {
+      "printed_order": 10,
+      "product_code": "PAP-10",
+      "description": "Papel sulfite",
+      "ncm": "48025610",
+      "cfop": "5102",
+      "quantity": "10.6826",
+      "unit_price": "17.6423",
+      "item_total": 18847
+    },
+    {
+      "printed_order": 11,
+      "product_code": "CAM-11",
+      "description": "Camiseta algodao",
+      "ncm": "61091000",
+      "cfop": "5102",
+      "quantity": "7.2867",
+      "unit_price": "41.4175",
+      "item_total": 30180
+    },
+    {
+      "printed_order": 12,
+      "product_code": "CAF-12",
+      "description": "Cafe torrado",
+      "ncm": "09012100",
+      "cfop": "5102",
+      "quantity": "4.3541",
+      "unit_price": "85.6048",
+      "item_total": 37273
+    },
+    {
+      "printed_order": 13,
+      "product_code": "CAD-13",
+      "description": "Caderno brochura",
+      "ncm": "48202000",
+      "cfop": "5102",
+      "quantity": "9.9794",
+      "unit_price": "213.3974",
+      "item_total": 212958
+    }
+  ]
+}

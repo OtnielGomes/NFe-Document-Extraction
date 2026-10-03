@@ -1,0 +1,39 @@
+{
+  "header": {
+    "access_key": "33241204797374286786550020000000021550519252",
+    "state": "RJ",
+    "model": "55",
+    "series": "2",
+    "number": "2",
+    "issue_date": "2024-12-14",
+    "issuer_cnpj": "04797374286786",
+    "recipient_cnpj_cpf": "60143831352415",
+    "total_products": 323173,
+    "freight": 0,
+    "insurance": 0,
+    "discount": 0,
+    "ipi_total": 0,
+    "other_expenses": 0,
+    "icms_total": 58171,
+    "icms_st_total": 38781,
+    "invoice_total": 361954,
+    "unsupported_components": {
+      "import_tax": false,
+      "returned_ipi": false,
+      "icms_relief": false,
+      "fcp_st": false
+    }
+  },
+  "line_items": [
+    {
+      "printed_order": 1,
+      "product_code": "CAM-01",
+      "description": "Camiseta algodao",
+      "ncm": "61091000",
+      "cfop": "5405",
+      "quantity": "13.6037",
+      "unit_price": "237.5623",
+      "item_total": 323173
+    }
+  ]
+}
