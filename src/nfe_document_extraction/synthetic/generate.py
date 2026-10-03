@@ -2,6 +2,9 @@
 
 Unit prices are stored in the XML with extra decimals. Ground truth keeps the
 four decimal places BrazilFiscalReport prints on the DANFE.
+
+About 15% of documents carry one planted error. The DANFE prints that error,
+and ground truth keeps the printed value.
 """
 
 from __future__ import annotations
@@ -10,8 +13,8 @@ import json
 import random
 import shutil
 import sys
-from collections.abc import Sequence
-from dataclasses import dataclass
+from collections.abc import Callable, Sequence
+from dataclasses import dataclass, replace
 from datetime import UTC, date, datetime, timedelta
 from decimal import ROUND_HALF_UP, Decimal
 from pathlib import Path
@@ -29,6 +32,17 @@ from nfe_document_extraction.validation.identifiers import (
     cnpj_check_digits,
     cpf_check_digits,
 )
+from nfe_document_extraction.validation.validate import (
+    ACCESS_KEY,
+    ACCESS_KEY_CHECK_DIGIT,
+    ACCESS_KEY_CROSS_CONSISTENCY,
+    CNPJ_CPF_CHECK_DIGIT,
+    NCM_CFOP_ISSUE_DATE,
+    QUANTITY_TIMES_UNIT_PRICE,
+    RECIPIENT_CNPJ_CPF,
+    SERIES,
+    TOTALS,
+)
 
 SYNTHETIC_SEED = 5
 SYNTHETIC_COUNT = 100
@@ -38,6 +52,25 @@ _MULTIPAGE_DOCUMENTS = 20
 _FREIGHT_DOCUMENTS = 25
 _DISCOUNT_DOCUMENTS = 20
 _IPI_DOCUMENTS = 15
+# ~15% of the set, one document per planted error, spread across every rule.
+_PLANTED_COUNT = 15
+_PLANTED_RULES = (
+    CNPJ_CPF_CHECK_DIGIT,
+    ACCESS_KEY_CHECK_DIGIT,
+    ACCESS_KEY_CROSS_CONSISTENCY,
+    QUANTITY_TIMES_UNIT_PRICE,
+    TOTALS,
+    NCM_CFOP_ISSUE_DATE,
+)
+_CLEAN_SPLIT = "clean"
+_PLANTED_SPLIT = "planted_errors"
+_PLANTED_SERIES = "9"
+_PLANTED_NCM = "9999999"
+_PLANTED_CENTS = 100
+_UNIT_PRICE_SHIFT = Decimal("200.0000")
+_FIRST_UNIT_PRICE = "line_items[0].unit_price"
+_INVOICE_TOTAL = "header.invoice_total"
+_FIRST_NCM = "line_items[0].ncm"
 # Long descriptions at this item count spill onto a second DANFE page.
 _MULTIPAGE_MIN_ITEMS = 24
 _PRICE_PRECISION = 4
@@ -84,12 +117,22 @@ _NO_UNSUPPORTED = UnsupportedComponents(
 
 
 @dataclass(frozen=True)
+class PlantedError:
+    """The single validation rule and field deliberately broken on a DANFE."""
+
+    rule: str
+    field: str
+
+
+@dataclass(frozen=True)
 class SyntheticDocument:
     """One fictitious NF-e and the DANFE values used as ground truth."""
 
     nfe_id: str
     has_icms_st: bool
     origin: str
+    split: str
+    planted_error: PlantedError | None
     xml: str
     pdf: bytes
     ground_truth: Extraction
@@ -126,7 +169,7 @@ def generate_synthetic_set(
     discount = _pick(rng, count, _DISCOUNT_DOCUMENTS)
     ipi = _pick(rng, count, _IPI_DOCUMENTS)
     item_counts = _item_counts(multipage, count)
-    return tuple(
+    documents = tuple(
         _document(
             rng,
             index=index,
@@ -138,6 +181,13 @@ def generate_synthetic_set(
             has_ipi=index in ipi,
         )
         for index in range(count)
+    )
+    planted_rules = _planted_rules(seed)
+    return tuple(
+        _plant_error(document, planted_rules[index])
+        if index in planted_rules
+        else document
+        for index, document in enumerate(documents)
     )
 
 
@@ -158,16 +208,7 @@ def write_synthetic_set(
             folder / "ground_truth.json",
             _json_bytes(document.ground_truth.model_dump(mode="json")),
         )
-        _write(
-            folder / "metadata.json",
-            _json_bytes(
-                {
-                    "nfe_id": document.nfe_id,
-                    "has_icms_st": document.has_icms_st,
-                    "origin": document.origin,
-                }
-            ),
-        )
+        _write(folder / "metadata.json", _json_bytes(_metadata(document)))
 
 
 def _document(
@@ -269,6 +310,8 @@ def _document(
         nfe_id=nfe_id,
         has_icms_st=has_icms_st,
         origin="synthetic",
+        split=_CLEAN_SPLIT,
+        planted_error=None,
         xml=xml,
         pdf=_render_pdf(xml),
         ground_truth=ground_truth,
@@ -615,6 +658,229 @@ def _json_bytes(payload: object) -> bytes:
 
 def _write(path: Path, payload: bytes) -> None:
     path.write_bytes(payload)
+
+
+def _metadata(document: SyntheticDocument) -> dict[str, object]:
+    metadata: dict[str, object] = {
+        "nfe_id": document.nfe_id,
+        "has_icms_st": document.has_icms_st,
+        "origin": document.origin,
+        "split": document.split,
+    }
+    if document.planted_error is not None:
+        metadata["planted_error"] = {
+            "rule": document.planted_error.rule,
+            "field": document.planted_error.field,
+        }
+    return metadata
+
+
+def _planted_rules(seed: int) -> dict[int, str]:
+    """Choose documents without touching the RNG that builds invoice content."""
+    rng = random.Random(f"planted-errors:{seed}")
+    indexes = list(range(SYNTHETIC_COUNT))
+    rng.shuffle(indexes)
+    return {
+        index: _PLANTED_RULES[position % len(_PLANTED_RULES)]
+        for position, index in enumerate(indexes[:_PLANTED_COUNT])
+    }
+
+
+def _plant_error(document: SyntheticDocument, rule: str) -> SyntheticDocument:
+    planters = {
+        CNPJ_CPF_CHECK_DIGIT: _plant_recipient_check_digit,
+        ACCESS_KEY_CHECK_DIGIT: _plant_access_key_check_digit,
+        ACCESS_KEY_CROSS_CONSISTENCY: _plant_series_mismatch,
+        QUANTITY_TIMES_UNIT_PRICE: _plant_unit_price,
+        TOTALS: _plant_invoice_total,
+        NCM_CFOP_ISSUE_DATE: _plant_ncm,
+    }
+    return planters[rule](document)
+
+
+def _plant_recipient_check_digit(document: SyntheticDocument) -> SyntheticDocument:
+    current = document.ground_truth.header.recipient_cnpj_cpf
+    planted = _flip_last_digit(current)
+    tag = "CPF" if len(current) == 11 else "CNPJ"
+    xml = _replace_once(
+        document.xml,
+        f"<{tag}>{current}</{tag}>",
+        f"<{tag}>{planted}</{tag}>",
+    )
+    header = document.ground_truth.header.model_copy(
+        update={"recipient_cnpj_cpf": planted}
+    )
+    return _with_planted_error(
+        document,
+        xml=xml,
+        ground_truth=document.ground_truth.model_copy(update={"header": header}),
+        rule=CNPJ_CPF_CHECK_DIGIT,
+        field=RECIPIENT_CNPJ_CPF,
+    )
+
+
+def _plant_access_key_check_digit(document: SyntheticDocument) -> SyntheticDocument:
+    current = document.ground_truth.header.access_key
+    planted = _flip_last_digit(current)
+    if document.xml.count(current) != 2:
+        raise RuntimeError("access key must appear in the NF-e id and the protocol")
+    xml = document.xml.replace(current, planted)
+    xml = _replace_once(
+        xml,
+        f"<cDV>{current[-1]}</cDV>",
+        f"<cDV>{planted[-1]}</cDV>",
+    )
+    header = document.ground_truth.header.model_copy(update={"access_key": planted})
+    return _with_planted_error(
+        document,
+        xml=xml,
+        ground_truth=document.ground_truth.model_copy(update={"header": header}),
+        rule=ACCESS_KEY_CHECK_DIGIT,
+        field=ACCESS_KEY,
+    )
+
+
+def _plant_series_mismatch(document: SyntheticDocument) -> SyntheticDocument:
+    current = document.ground_truth.header.series
+    xml = _replace_once(
+        document.xml,
+        f"<serie>{current}</serie>",
+        f"<serie>{_PLANTED_SERIES}</serie>",
+    )
+    header = document.ground_truth.header.model_copy(update={"series": _PLANTED_SERIES})
+    return _with_planted_error(
+        document,
+        xml=xml,
+        ground_truth=document.ground_truth.model_copy(update={"header": header}),
+        rule=ACCESS_KEY_CROSS_CONSISTENCY,
+        field=SERIES,
+    )
+
+
+def _plant_unit_price(document: SyntheticDocument) -> SyntheticDocument:
+    item = document.ground_truth.line_items[0]
+    printed = item.unit_price + _UNIT_PRICE_SHIFT
+    xml_price = _unit_price_xml(printed)
+    actual = Decimal(item.item_total) / Decimal(100)
+    if abs(item.quantity * printed - actual) <= Decimal("0.01"):
+        raise RuntimeError(
+            "planted unit price is still within R$ 0.01 of the item total"
+        )
+
+    def transform(block: str) -> str:
+        return _replace_first_tag(
+            _replace_first_tag(block, "vUnCom", xml_price),
+            "vUnTrib",
+            xml_price,
+        )
+
+    xml = _map_block(document.xml, '<det nItem="1">', "</det>", transform)
+    items = list(document.ground_truth.line_items)
+    items[0] = item.model_copy(update={"unit_price": printed})
+    return _with_planted_error(
+        document,
+        xml=xml,
+        ground_truth=document.ground_truth.model_copy(
+            update={"line_items": tuple(items)}
+        ),
+        rule=QUANTITY_TIMES_UNIT_PRICE,
+        field=_FIRST_UNIT_PRICE,
+    )
+
+
+def _plant_invoice_total(document: SyntheticDocument) -> SyntheticDocument:
+    current = document.ground_truth.header.invoice_total
+    planted = current + _PLANTED_CENTS
+    xml = _replace_once(
+        document.xml,
+        f"<vNF>{_reais(current)}</vNF>",
+        f"<vNF>{_reais(planted)}</vNF>",
+    )
+    xml = _replace_once(
+        xml,
+        f"<vPag>{_reais(current)}</vPag>",
+        f"<vPag>{_reais(planted)}</vPag>",
+    )
+    header = document.ground_truth.header.model_copy(update={"invoice_total": planted})
+    return _with_planted_error(
+        document,
+        xml=xml,
+        ground_truth=document.ground_truth.model_copy(update={"header": header}),
+        rule=TOTALS,
+        field=_INVOICE_TOTAL,
+    )
+
+
+def _plant_ncm(document: SyntheticDocument) -> SyntheticDocument:
+    xml = _map_block(
+        document.xml,
+        '<det nItem="1">',
+        "</det>",
+        lambda block: _replace_first_tag(block, "NCM", _PLANTED_NCM),
+    )
+    items = list(document.ground_truth.line_items)
+    items[0] = items[0].model_copy(update={"ncm": _PLANTED_NCM})
+    return _with_planted_error(
+        document,
+        xml=xml,
+        ground_truth=document.ground_truth.model_copy(
+            update={"line_items": tuple(items)}
+        ),
+        rule=NCM_CFOP_ISSUE_DATE,
+        field=_FIRST_NCM,
+    )
+
+
+def _with_planted_error(
+    document: SyntheticDocument,
+    *,
+    xml: str,
+    ground_truth: Extraction,
+    rule: str,
+    field: str,
+) -> SyntheticDocument:
+    return replace(
+        document,
+        split=_PLANTED_SPLIT,
+        planted_error=PlantedError(rule=rule, field=field),
+        xml=xml,
+        pdf=_render_pdf(xml),
+        ground_truth=ground_truth,
+    )
+
+
+def _map_block(
+    xml: str,
+    start_marker: str,
+    end_marker: str,
+    transform: Callable[[str], str],
+) -> str:
+    start = xml.find(start_marker)
+    end = xml.find(end_marker, start)
+    if start < 0 or end < 0:
+        raise RuntimeError(f"missing {start_marker}")
+    return xml[:start] + transform(xml[start:end]) + xml[end:]
+
+
+def _replace_first_tag(block: str, tag: str, value: str) -> str:
+    open_tag = f"<{tag}>"
+    close_tag = f"</{tag}>"
+    start = block.find(open_tag)
+    end = block.find(close_tag, start)
+    if start < 0 or end < 0:
+        raise RuntimeError(f"missing <{tag}>")
+    return block[: start + len(open_tag)] + value + block[end:]
+
+
+def _replace_once(text: str, old: str, new: str) -> str:
+    found = text.count(old)
+    if found != 1:
+        raise RuntimeError(f"expected one occurrence of {old!r}, found {found}")
+    return text.replace(old, new, 1)
+
+
+def _flip_last_digit(value: str) -> str:
+    return value[:-1] + str((int(value[-1]) + 1) % 10)
 
 
 def main(argv: Sequence[str] | None = None) -> None:

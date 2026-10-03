@@ -1,5 +1,10 @@
 {
   "nfe_id": "synthetic-041",
   "has_icms_st": false,
-  "origin": "synthetic"
+  "origin": "synthetic",
+  "split": "planted_errors",
+  "planted_error": {
+    "rule": "access_key_cross_consistency",
+    "field": "header.series"
+  }
 }

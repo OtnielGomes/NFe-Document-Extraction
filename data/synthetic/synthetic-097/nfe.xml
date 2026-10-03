@@ -45,12 +45,12 @@
           <CFOP>5405</CFOP>
           <uCom>UN</uCom>
           <qCom>11.8824</qCom>
-          <vUnCom>6.5736000100</vUnCom>
+          <vUnCom>206.5736000100</vUnCom>
           <vProd>78.11</vProd>
           <cEANTrib>SEM GTIN</cEANTrib>
           <uTrib>UN</uTrib>
           <qTrib>11.8824</qTrib>
-          <vUnTrib>6.5736000100</vUnTrib>
+          <vUnTrib>206.5736000100</vUnTrib>
           <indTot>1</indTot>
         </prod>
         <imposto>

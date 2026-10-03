@@ -1,5 +1,10 @@
 {
   "nfe_id": "synthetic-012",
   "has_icms_st": false,
-  "origin": "synthetic"
+  "origin": "synthetic",
+  "split": "planted_errors",
+  "planted_error": {
+    "rule": "ncm_cfop_issue_date",
+    "field": "line_items[0].ncm"
+  }
 }

@@ -188,14 +188,14 @@
           <vPIS>0.00</vPIS>
           <vCOFINS>0.00</vCOFINS>
           <vOutro>0.00</vOutro>
-          <vNF>5085.80</vNF>
+          <vNF>5086.80</vNF>
         </ICMSTot>
       </total>
       <transp><modFrete>0</modFrete></transp>
       <pag>
         <detPag>
           <tPag>01</tPag>
-          <vPag>5085.80</vPag>
+          <vPag>5086.80</vPag>
         </detPag>
       </pag>
     </infNFe>

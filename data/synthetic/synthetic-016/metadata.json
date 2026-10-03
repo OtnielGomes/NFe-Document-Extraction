@@ -1,5 +1,6 @@
 {
   "nfe_id": "synthetic-016",
   "has_icms_st": false,
-  "origin": "synthetic"
+  "origin": "synthetic",
+  "split": "clean"
 }

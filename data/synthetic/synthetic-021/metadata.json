@@ -1,5 +1,10 @@
 {
   "nfe_id": "synthetic-021",
   "has_icms_st": false,
-  "origin": "synthetic"
+  "origin": "synthetic",
+  "split": "planted_errors",
+  "planted_error": {
+    "rule": "quantity_times_unit_price",
+    "field": "line_items[0].unit_price"
+  }
 }

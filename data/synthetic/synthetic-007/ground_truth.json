@@ -16,7 +16,7 @@
     "other_expenses": 0,
     "icms_total": 90775,
     "icms_st_total": 0,
-    "invoice_total": 508580,
+    "invoice_total": 508680,
     "unsupported_components": {
       "import_tax": false,
       "returned_ipi": false,

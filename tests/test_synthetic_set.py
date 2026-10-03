@@ -15,7 +15,7 @@ import pytest
 from pypdf import PdfReader
 
 from nfe_document_extraction.domain import Extraction
-from nfe_document_extraction.synthetic import SyntheticDocument
+from nfe_document_extraction.synthetic import PlantedError, SyntheticDocument
 from nfe_document_extraction.validation import ValidationReport, validate
 
 _NFE_NS = "{http://www.portalfiscal.inf.br/nfe}"
@@ -45,10 +45,10 @@ def test_repository_set_matches_the_fixed_seed(synthetic_dir: Path) -> None:
     metadata = json.loads(
         (synthetic_dir / "synthetic-001" / "metadata.json").read_text(encoding="utf-8")
     )
-    assert set(metadata) == {"nfe_id", "has_icms_st", "origin"}
     assert metadata["origin"] == "synthetic"
     assert metadata["nfe_id"] == "synthetic-001"
     assert isinstance(metadata["has_icms_st"], bool)
+    assert metadata["split"] in {"clean", "planted_errors"}
 
 
 def test_synthetic_set_covers_the_acceptance_criteria(synthetic_dir: Path) -> None:
@@ -82,8 +82,9 @@ def test_synthetic_set_covers_the_acceptance_criteria(synthetic_dir: Path) -> No
     assert any(document.ground_truth.header.ipi_total > 0 for document in documents)
 
     for document in documents:
-        report = validate(document.ground_truth, today=_AS_OF)
-        assert report.accepted, _failure_messages(document.nfe_id, report)
+        if document.split == "clean":
+            report = validate(document.ground_truth, today=_AS_OF)
+            assert report.accepted, _failure_messages(document.nfe_id, report)
         _assert_printed_unit_price(document)
 
 
@@ -106,11 +107,17 @@ def _load(root: Path) -> tuple[SyntheticDocument, ...]:
     documents: list[SyntheticDocument] = []
     for folder in sorted(path for path in root.iterdir() if path.is_dir()):
         metadata = json.loads((folder / "metadata.json").read_text(encoding="utf-8"))
+        planted = metadata.get("planted_error")
+        planted_error = None
+        if planted is not None:
+            planted_error = PlantedError(rule=planted["rule"], field=planted["field"])
         documents.append(
             SyntheticDocument(
                 nfe_id=metadata["nfe_id"],
                 has_icms_st=metadata["has_icms_st"],
                 origin=metadata["origin"],
+                split=metadata["split"],
+                planted_error=planted_error,
                 xml=(folder / "nfe.xml").read_text(encoding="utf-8"),
                 pdf=(folder / "danfe.pdf").read_bytes(),
                 ground_truth=Extraction.model_validate_json(

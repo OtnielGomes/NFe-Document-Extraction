@@ -3,6 +3,7 @@
 from nfe_document_extraction.synthetic.generate import (
     SYNTHETIC_COUNT,
     SYNTHETIC_SEED,
+    PlantedError,
     SyntheticDocument,
     generate_synthetic_set,
     write_synthetic_set,
@@ -11,6 +12,7 @@ from nfe_document_extraction.synthetic.generate import (
 __all__ = [
     "SYNTHETIC_COUNT",
     "SYNTHETIC_SEED",
+    "PlantedError",
     "SyntheticDocument",
     "generate_synthetic_set",
     "write_synthetic_set",

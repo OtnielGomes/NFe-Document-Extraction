@@ -1,5 +1,10 @@
 {
   "nfe_id": "synthetic-007",
   "has_icms_st": false,
-  "origin": "synthetic"
+  "origin": "synthetic",
+  "split": "planted_errors",
+  "planted_error": {
+    "rule": "totals",
+    "field": "header.invoice_total"
+  }
 }

@@ -1,5 +1,10 @@
 {
   "nfe_id": "synthetic-100",
   "has_icms_st": false,
-  "origin": "synthetic"
+  "origin": "synthetic",
+  "split": "planted_errors",
+  "planted_error": {
+    "rule": "cnpj_cpf_check_digit",
+    "field": "header.recipient_cnpj_cpf"
+  }
 }

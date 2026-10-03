@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <nfeProc versao="4.00" xmlns="http://www.portalfiscal.inf.br/nfe">
   <NFe xmlns="http://www.portalfiscal.inf.br/nfe">
-    <infNFe versao="4.00" Id="NFe35240936853433075064550010000000611335033975">
+    <infNFe versao="4.00" Id="NFe35240936853433075064550010000000611335033976">
       <ide>
         <cUF>35</cUF>
         <cNF>33503397</cNF>
@@ -15,7 +15,7 @@
         <cMunFG>3550308</cMunFG>
         <tpImp>1</tpImp>
         <tpEmis>1</tpEmis>
-        <cDV>5</cDV>
+        <cDV>6</cDV>
         <tpAmb>2</tpAmb>
         <finNFe>1</finNFe>
         <indFinal>1</indFinal>
@@ -160,7 +160,7 @@
     <infProt>
       <tpAmb>2</tpAmb>
       <verAplic>SYN</verAplic>
-      <chNFe>35240936853433075064550010000000611335033975</chNFe>
+      <chNFe>35240936853433075064550010000000611335033976</chNFe>
       <dhRecbto>2024-09-07T10:00:00-03:00</dhRecbto>
       <nProt>135240000000061</nProt>
       <digVal>AAAAAAAAAAAAAAAAAAAAAAAAAAA=</digVal>
