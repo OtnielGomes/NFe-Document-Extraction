@@ -1,11 +1,17 @@
 """Section agents: strict schemas, repository prompts, pinned snapshots."""
 
+import io
 from pathlib import Path
 
 from openai.lib._parsing import type_to_response_format_param
+from pypdf import PdfWriter
 from test_identifier_rules import ACCESS_KEY, ISSUER_CNPJ, RECIPIENT_CPF
 
-from nfe_document_extraction.agents.config import STRONG_VISION, load_approach_config
+from nfe_document_extraction.agents.config import (
+    STRONG_VISION,
+    TEXT_LAYER,
+    load_approach_config,
+)
 from nfe_document_extraction.agents.schema import (
     HeaderPayload,
     LineItemPayload,
@@ -16,6 +22,7 @@ from nfe_document_extraction.agents.sections import (
     RepairFieldNote,
     Section,
     SectionRequest,
+    TextLayerSectionReader,
     VisionSectionReader,
     interpret_header_output,
     interpret_line_items_output,
@@ -146,6 +153,79 @@ def test_line_items_repair_sends_the_failing_fields_and_the_same_message() -> No
     assert isinstance(text_format, dict)
     assert text_format["format"]["name"] == "LineItemsSectionPayload"
     assert text_format["format"]["strict"] is True
+
+
+def test_text_layer_reader_sends_pdf_text_and_no_page_images() -> None:
+    client = _Client()
+    reader = TextLayerSectionReader(client, load_approach_config(TEXT_LAYER))  # type: ignore[arg-type]
+
+    reading = reader.read(
+        SectionRequest(section=Section.HEADER, document=_PDF.read_bytes())
+    )
+
+    assert reading.failure is ExtractionFailure.PARSE_FAILURE
+    assert client.responses.kwargs["model"] == "gpt-4.1-mini-2025-04-14"
+    assert "images" not in str(client.responses.kwargs["instructions"])
+    text_format = client.responses.kwargs["text"]
+    assert isinstance(text_format, dict)
+    assert text_format["format"]["name"] == "HeaderPayload"
+    assert text_format["format"]["strict"] is True
+    content = client.responses.kwargs["input"]
+    assert isinstance(content, list)
+    parts = content[0]["content"]
+    assert [part["type"] for part in parts] == ["input_text", "input_text"]
+    assert "CAM-01" in parts[1]["text"]
+    assert "3524 0983 6063 6912 2950 5500 1000 0000 0116 4557 6624" in parts[1]["text"]
+
+
+def test_a_pdf_without_a_text_layer_is_an_extraction_error() -> None:
+    client = _Client()
+    reader = TextLayerSectionReader(client, load_approach_config(TEXT_LAYER))  # type: ignore[arg-type]
+    writer = PdfWriter()
+    writer.add_blank_page(width=200, height=200)
+    buffer = io.BytesIO()
+    writer.write(buffer)
+
+    reading = reader.read(
+        SectionRequest(section=Section.HEADER, document=buffer.getvalue())
+    )
+
+    assert reading.failure is ExtractionFailure.PARSE_FAILURE
+    assert client.responses.kwargs == {}
+
+
+def test_text_layer_repair_sends_the_failing_fields_and_the_same_message() -> None:
+    client = _Client()
+    reader = TextLayerSectionReader(client, load_approach_config(TEXT_LAYER))  # type: ignore[arg-type]
+    message = "Sum of item totals does not equal total products."
+
+    reader.read(
+        SectionRequest(
+            section=Section.LINE_ITEMS,
+            document=_PDF.read_bytes(),
+            notes=(
+                RepairFieldNote(
+                    message=message,
+                    fields=("line_items[0].item_total",),
+                ),
+            ),
+        )
+    )
+
+    instructions = client.responses.kwargs["instructions"]
+    assert isinstance(instructions, str)
+    prompt = (_PROMPTS / "line_items_text.md").read_text(encoding="utf-8")
+    assert instructions.startswith(prompt.rstrip())
+    assert "line_items[0].item_total" in instructions
+    assert message in instructions
+    assert "Do not calculate a replacement" in instructions
+    text_format = client.responses.kwargs["text"]
+    assert isinstance(text_format, dict)
+    assert text_format["format"]["name"] == "LineItemsSectionPayload"
+    content = client.responses.kwargs["input"]
+    assert isinstance(content, list)
+    parts = content[0]["content"]
+    assert [part["type"] for part in parts] == ["input_text", "input_text"]
 
 
 def test_printed_header_normalizes_into_a_header() -> None:

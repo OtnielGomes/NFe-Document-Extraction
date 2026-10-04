@@ -21,6 +21,13 @@
       "input_usd_per_million": "2.00",
       "cached_input_usd_per_million": "0.50",
       "output_usd_per_million": "8.00"
+    },
+    {
+      "approach": "text layer + text model",
+      "model": "gpt-4.1-mini-2025-04-14",
+      "input_usd_per_million": "0.40",
+      "cached_input_usd_per_million": "0.10",
+      "output_usd_per_million": "1.60"
     }
   ]
 }

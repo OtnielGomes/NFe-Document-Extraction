@@ -8,6 +8,7 @@ from pathlib import Path
 from typing import Protocol
 
 from openai import OpenAI
+from openai.types.responses import EasyInputMessageParam
 from pydantic import BaseModel, ValidationError
 
 from nfe_document_extraction.agents.config import ApproachConfig
@@ -15,6 +16,7 @@ from nfe_document_extraction.agents.schema import (
     HeaderPayload,
     LineItemsSectionPayload,
 )
+from nfe_document_extraction.agents.text_layer import extract_pdf_text, pdf_text_message
 from nfe_document_extraction.agents.vision import (
     MAX_OUTPUT_TOKENS,
     document_message,
@@ -29,6 +31,8 @@ from nfe_document_extraction.evaluation.metrics import ExtractionFailure
 _PROMPTS = Path(__file__).with_name("prompts")
 _HEADER_PROMPT = (_PROMPTS / "header.md").read_text(encoding="utf-8")
 _LINE_ITEMS_PROMPT = (_PROMPTS / "line_items.md").read_text(encoding="utf-8")
+_HEADER_TEXT_PROMPT = (_PROMPTS / "header_text.md").read_text(encoding="utf-8")
+_LINE_ITEMS_TEXT_PROMPT = (_PROMPTS / "line_items_text.md").read_text(encoding="utf-8")
 _USER_TEXT = {
     "header": "Extract the header of this DANFE.",
     "line_items": "Extract the line items of this DANFE.",
@@ -73,7 +77,7 @@ class SectionReading:
 
 
 class SectionReader(Protocol):
-    """The model boundary. Tests pass a scripted reader; the eval passes vision."""
+    """The model boundary. Tests pass a scripted reader; the eval passes one."""
 
     def read(self, request: SectionRequest) -> SectionReading: ...
 
@@ -93,28 +97,35 @@ class VisionSectionReader:
                 section=request.section,
                 failure=ExtractionFailure.PARSE_FAILURE,
             )
-        schema = _schema(request.section)
-        response = self._client.responses.create(
-            model=self._config.model,
-            instructions=_instructions(request.section, request.notes),
-            input=[document_message(_USER_TEXT[request.section.value], images)],
-            text=strict_text_format(schema),
-            temperature=0,
-            max_output_tokens=MAX_OUTPUT_TOKENS,
-            store=False,
+        return _complete(
+            self._client,
+            self._config,
+            request,
+            document_message(_USER_TEXT[request.section.value], images),
         )
-        input_tokens, cached_input_tokens, output_tokens = response_usage(response)
-        parsed = _parse(schema, getattr(response, "output_text", None))
-        refusal = response_refusal(response)
-        header, line_items, failure = _interpret(request.section, parsed, refusal)
-        return SectionReading(
-            section=request.section,
-            header=header,
-            line_items=line_items,
-            failure=failure,
-            input_tokens=input_tokens,
-            cached_input_tokens=cached_input_tokens,
-            output_tokens=output_tokens,
+
+
+class TextLayerSectionReader:
+    """One pinned text snapshot reading a section from the PDF text layer."""
+
+    def __init__(self, client: OpenAI, config: ApproachConfig) -> None:
+        self._client = client
+        self._config = config
+
+    def read(self, request: SectionRequest) -> SectionReading:
+        """Read one section from the text layer. No page image is sent."""
+        document_text = extract_pdf_text(request.document)
+        if not document_text.strip():
+            return SectionReading(
+                section=request.section,
+                failure=ExtractionFailure.PARSE_FAILURE,
+            )
+        return _complete(
+            self._client,
+            self._config,
+            request,
+            pdf_text_message(_USER_TEXT[request.section.value], document_text),
+            text_layer=True,
         )
 
 
@@ -150,14 +161,64 @@ def interpret_line_items_output(
         return None, ExtractionFailure.PARSE_FAILURE
 
 
+def _complete(
+    client: OpenAI,
+    config: ApproachConfig,
+    request: SectionRequest,
+    message: EasyInputMessageParam,
+    *,
+    text_layer: bool = False,
+) -> SectionReading:
+    schema = _schema(request.section)
+    response = client.responses.create(
+        model=config.model,
+        instructions=_instructions(
+            request.section, request.notes, text_layer=text_layer
+        ),
+        input=[message],
+        text=strict_text_format(schema),
+        temperature=0,
+        max_output_tokens=MAX_OUTPUT_TOKENS,
+        store=False,
+    )
+    input_tokens, cached_input_tokens, output_tokens = response_usage(response)
+    parsed = _parse(schema, getattr(response, "output_text", None))
+    refusal = response_refusal(response)
+    header, line_items, failure = _interpret(request.section, parsed, refusal)
+    return SectionReading(
+        section=request.section,
+        header=header,
+        line_items=line_items,
+        failure=failure,
+        input_tokens=input_tokens,
+        cached_input_tokens=cached_input_tokens,
+        output_tokens=output_tokens,
+    )
+
+
 def _schema(section: Section) -> type[BaseModel]:
     if section is Section.HEADER:
         return HeaderPayload
     return LineItemsSectionPayload
 
 
-def _instructions(section: Section, notes: tuple[RepairFieldNote, ...]) -> str:
-    prompt = _HEADER_PROMPT if section is Section.HEADER else _LINE_ITEMS_PROMPT
+def _prompt(section: Section, *, text_layer: bool) -> str:
+    if text_layer and section is Section.HEADER:
+        return _HEADER_TEXT_PROMPT
+    if text_layer:
+        return _LINE_ITEMS_TEXT_PROMPT
+    if section is Section.HEADER:
+        return _HEADER_PROMPT
+    return _LINE_ITEMS_PROMPT
+
+
+def _instructions(
+    section: Section,
+    notes: tuple[RepairFieldNote, ...],
+    *,
+    text_layer: bool = False,
+) -> str:
+    prompt = _prompt(section, text_layer=text_layer)
     if not notes:
         return prompt
     lines = [

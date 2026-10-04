@@ -1,6 +1,8 @@
-"""Local eval script: three approaches, no model calls in the test."""
+"""Local eval script: four approaches, no model calls in the test."""
 
+import json
 import os
+import shutil
 from datetime import date
 from pathlib import Path
 
@@ -39,6 +41,7 @@ def test_eval_compares_baseline_with_cheap_and_strong_vision(
     monkeypatch.setenv("OPENAI_API_KEY", "test-key")
     monkeypatch.setattr(run_eval, "OpenAI", lambda: object())
     monkeypatch.setattr(run_eval, "VisionSectionReader", _RecordingReader)
+    monkeypatch.setattr(run_eval, "TextLayerSectionReader", _RecordingReader)
     monkeypatch.setattr(run_eval, "compile_document_graph", lambda reader: reader)
     monkeypatch.setattr(run_eval, "extract_baseline", _baseline)
     monkeypatch.setattr(run_eval, "run_document", _graph_run)
@@ -60,6 +63,8 @@ def test_eval_compares_baseline_with_cheap_and_strong_vision(
     assert "single-call baseline" in text
     assert "cheap vision" in text
     assert "strong vision" in text
+    assert "text layer + text model" in text
+    assert "not applicable" in text
     assert "gpt-4.1-mini-2025-04-14" in text
     assert "gpt-4.1-2025-04-14" in text
     assert "Errors fixed by repair" in text
@@ -67,14 +72,78 @@ def test_eval_compares_baseline_with_cheap_and_strong_vision(
     assert "| single-call baseline | digital PDF | synthetic | 1 |" in text
     assert "| cheap vision | digital PDF | synthetic | 1 |" in text
     assert "| strong vision | digital PDF | synthetic | 1 |" in text
-    assert text.count("| 1 | 1 | 0 | n/a | 0 |") == 2
+    assert "| text layer + text model | digital PDF | synthetic | 1 |" in text
+    assert text.count("| 1 | 1 | 0 | n/a | 0 |") == 3
     assert "| 1 | 0 | 0 | n/a | 0 |" in text
-    assert text.count("| 0.400000 |") == 2
+    assert text.count("| 0.400000 |") == 3
     assert "| 2.000000 |" in text
+    assert _not_applicable("simulated photo") in text
+    assert _not_applicable("phone photo") in text
     captured = capsys.readouterr()
     assert "single-call baseline: synthetic-001 (1/1)" in captured.out
     assert "cheap vision: synthetic-001 (1/1)" in captured.out
     assert "strong vision: synthetic-001 (1/1)" in captured.out
+    assert "text layer + text model: synthetic-001 (1/1)" in captured.out
+
+
+def test_text_layer_skips_photo_renditions(monkeypatch, tmp_path, capsys) -> None:
+    dataset = _dataset_with_photos(tmp_path)
+    calls: list[tuple[str, bytes]] = []
+
+    def run_document(
+        reader: _RecordingReader,
+        pdf: bytes,
+        *,
+        today: object = None,
+        graph: object = None,
+    ) -> GraphRun:
+        calls.append((reader.config.approach, pdf))
+        return _graph_run(reader, pdf, today=today, graph=graph)
+
+    monkeypatch.setattr(run_eval, "load_env_file", lambda path: None)
+    monkeypatch.setenv("OPENAI_API_KEY", "test-key")
+    monkeypatch.setattr(run_eval, "OpenAI", lambda: object())
+    monkeypatch.setattr(run_eval, "VisionSectionReader", _RecordingReader)
+    monkeypatch.setattr(run_eval, "TextLayerSectionReader", _RecordingReader)
+    monkeypatch.setattr(run_eval, "compile_document_graph", lambda reader: reader)
+    monkeypatch.setattr(run_eval, "extract_baseline", _baseline)
+    monkeypatch.setattr(run_eval, "run_document", run_document)
+    output = tmp_path / "results.md"
+
+    code = run_eval.main(
+        ["--dataset", str(dataset), "--output", str(output), "--limit", "10"]
+    )
+
+    assert code == 0
+    digital_pdf = (dataset / "digital" / "danfe.pdf").read_bytes()
+    simulated_pdf = (dataset / "simulated" / "danfe.pdf").read_bytes()
+    phone_pdf = (dataset / "phone" / "danfe.pdf").read_bytes()
+    text_calls = [
+        pdf for approach, pdf in calls if approach == "text layer + text model"
+    ]
+    assert text_calls == [digital_pdf]
+    assert simulated_pdf not in text_calls
+    assert phone_pdf not in text_calls
+    text = output.read_text(encoding="utf-8")
+    assert "| text layer + text model | digital PDF | synthetic | 1 |" in text
+    assert _not_applicable("simulated photo") in text
+    assert _not_applicable("phone photo") in text
+    captured = capsys.readouterr()
+    assert "text layer + text model: synthetic-001 (1/1)" in captured.out
+    assert "text layer + text model: synthetic-photo" not in captured.out
+    assert "text layer + text model: synthetic-phone" not in captured.out
+
+
+def test_unknown_model_stops_before_a_model_call(monkeypatch, capsys) -> None:
+    monkeypatch.setattr(run_eval, "load_env_file", lambda path: None)
+    monkeypatch.setenv("OPENAI_API_KEY", "test-key")
+    monkeypatch.setenv("NFE_BASELINE_MODEL", "gpt-not-priced")
+    monkeypatch.setattr(run_eval, "OpenAI", _openai_must_not_be_called)
+
+    code = run_eval.main(["--limit", "1"])
+
+    assert code == 2
+    assert "pricing table" in capsys.readouterr().err
 
 
 def test_env_file_sets_missing_keys_without_overriding(monkeypatch, tmp_path) -> None:
@@ -102,6 +171,36 @@ QUOTED="abc"
     assert "EMPTY" not in os.environ
 
 
+def _not_applicable(rendition: str) -> str:
+    gaps = " | ".join(["n/a"] * 12)
+    return f"| text layer + text model | {rendition} | synthetic | {gaps} |"
+
+
+def _dataset_with_photos(tmp_path: Path) -> Path:
+    source = _ROOT / "data" / "synthetic" / "synthetic-001"
+    dataset = tmp_path / "dataset"
+    copies = (
+        ("digital", "synthetic-001", None),
+        ("simulated", "synthetic-photo", "simulated photo"),
+        ("phone", "synthetic-phone", "phone photo"),
+    )
+    for folder_name, nfe_id, rendition in copies:
+        folder = dataset / folder_name
+        shutil.copytree(source, folder)
+        metadata_path = folder / "metadata.json"
+        metadata = json.loads(metadata_path.read_text(encoding="utf-8"))
+        metadata["nfe_id"] = nfe_id
+        if rendition is not None:
+            metadata["rendition"] = rendition
+        metadata_path.write_text(json.dumps(metadata), encoding="utf-8")
+        (folder / "danfe.pdf").write_bytes(nfe_id.encode())
+    return dataset
+
+
+def _openai_must_not_be_called() -> object:
+    raise AssertionError("OpenAI client was created")
+
+
 def _baseline(client: object, pdf: bytes, *, config: ApproachConfig) -> BaselineReading:
     assert config.approach == "single-call baseline"
     return BaselineReading(
@@ -122,7 +221,11 @@ def _graph_run(
     graph: object = None,
 ) -> GraphRun:
     assert graph is reader
-    assert reader.config.approach in {"cheap vision", "strong vision"}
+    assert reader.config.approach in {
+        "cheap vision",
+        "strong vision",
+        "text layer + text model",
+    }
     initial = validate(_extraction(invoice_total=1), today=_AS_OF)
     accepted = validate(_extraction(), today=_AS_OF)
     return GraphRun(

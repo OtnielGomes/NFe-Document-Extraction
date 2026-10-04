@@ -1,4 +1,4 @@
-"""Load the published synthetic digital PDFs."""
+"""Load the published synthetic DANFE renditions."""
 
 from __future__ import annotations
 
@@ -7,6 +7,11 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from nfe_document_extraction.domain import Extraction
+
+DIGITAL_PDF = "digital PDF"
+SIMULATED_PHOTO = "simulated photo"
+PHONE_PHOTO = "phone photo"
+PHOTO_RENDITIONS = frozenset({SIMULATED_PHOTO, PHONE_PHOTO})
 
 
 @dataclass(frozen=True)
@@ -18,6 +23,7 @@ class DatasetExample:
     pdf: bytes
     ground_truth: Extraction
     planted_rule: str | None
+    rendition: str = DIGITAL_PDF
 
 
 def load_synthetic_pdfs(root: Path) -> tuple[DatasetExample, ...]:
@@ -26,6 +32,7 @@ def load_synthetic_pdfs(root: Path) -> tuple[DatasetExample, ...]:
     for folder in sorted(path for path in root.iterdir() if path.is_dir()):
         metadata = json.loads((folder / "metadata.json").read_text(encoding="utf-8"))
         planted = metadata.get("planted_error")
+        rendition = metadata.get("rendition") or DIGITAL_PDF
         examples.append(
             DatasetExample(
                 nfe_id=metadata["nfe_id"],
@@ -35,6 +42,7 @@ def load_synthetic_pdfs(root: Path) -> tuple[DatasetExample, ...]:
                     (folder / "ground_truth.json").read_text(encoding="utf-8")
                 ),
                 planted_rule=None if planted is None else str(planted["rule"]),
+                rendition=str(rendition),
             )
         )
     return tuple(examples)

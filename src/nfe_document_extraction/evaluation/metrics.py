@@ -52,6 +52,29 @@ class ResultRow:
     errors_reaching_human_review: int
     planted_detection_rate: Decimal | None
     extraction_failures: int
+    applicable: bool = True
+
+
+def not_applicable_row(approach: str, rendition: str, origin: str) -> ResultRow:
+    """A rendition this approach does not run. Metrics are not applicable."""
+    return ResultRow(
+        approach=approach,
+        rendition=rendition,
+        origin=origin,
+        documents=0,
+        field_accuracy=None,
+        description_similarity=None,
+        perfect_invoice_rate=None,
+        cost_per_invoice_usd=Decimal(0),
+        latency_median_seconds=0.0,
+        latency_p95_seconds=0.0,
+        validator_errors_caught=0,
+        errors_fixed_by_repair=0,
+        errors_reaching_human_review=0,
+        planted_detection_rate=None,
+        extraction_failures=0,
+        applicable=False,
+    )
 
 
 def summarize(invoices: Sequence[InvoiceEvaluation]) -> tuple[ResultRow, ...]:

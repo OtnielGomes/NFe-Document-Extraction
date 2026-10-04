@@ -14,25 +14,38 @@ from nfe_document_extraction.agents.baseline import extract_baseline
 from nfe_document_extraction.agents.config import (
     CHEAP_VISION,
     STRONG_VISION,
+    TEXT_LAYER,
     ApproachConfig,
     load_approach_config,
     load_baseline_config,
 )
-from nfe_document_extraction.agents.sections import VisionSectionReader
+from nfe_document_extraction.agents.sections import (
+    SectionReader,
+    TextLayerSectionReader,
+    VisionSectionReader,
+)
 from nfe_document_extraction.env import load_env_file
 from nfe_document_extraction.evaluation import render_results, summarize, token_cost_usd
 from nfe_document_extraction.evaluation.dataset import (
+    PHONE_PHOTO,
+    PHOTO_RENDITIONS,
+    SIMULATED_PHOTO,
     DatasetExample,
     load_synthetic_pdfs,
 )
 from nfe_document_extraction.evaluation.judge import judge_reading
-from nfe_document_extraction.evaluation.metrics import InvoiceEvaluation
+from nfe_document_extraction.evaluation.metrics import (
+    InvoiceEvaluation,
+    ResultRow,
+    not_applicable_row,
+)
 from nfe_document_extraction.graph import compile_document_graph, run_document
 from nfe_document_extraction.validation import DocumentOutcome
 
 _ROOT = Path(__file__).resolve().parent.parent
 _RENDITION = "digital PDF"
-_SECTION_APPROACHES = (CHEAP_VISION, STRONG_VISION)
+_SECTION_APPROACHES = (CHEAP_VISION, STRONG_VISION, TEXT_LAYER)
+_PHOTO_ROWS = (SIMULATED_PHOTO, PHONE_PHOTO)
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -66,18 +79,22 @@ def main(argv: list[str] | None = None) -> int:
             file=sys.stderr,
         )
         return 2
+    try:
+        configs = (
+            load_baseline_config(),
+            *(load_approach_config(approach) for approach in _SECTION_APPROACHES),
+        )
+    except ValueError as exc:
+        print(exc, file=sys.stderr)
+        return 2
 
     documents = load_synthetic_pdfs(args.dataset)
     if args.limit is not None:
         documents = documents[: args.limit]
     client = OpenAI()
-    evaluations = collect_evaluations(documents, client)
-    configs = (
-        load_baseline_config(),
-        *(load_approach_config(approach) for approach in _SECTION_APPROACHES),
-    )
+    evaluations = collect_evaluations(documents, client, configs)
     text = render_results(
-        summarize(evaluations),
+        _result_rows(evaluations, documents),
         model_snapshot=_snapshot_label(configs),
         pricing_as_of=configs[0].pricing_as_of.isoformat(),
     )
@@ -90,14 +107,14 @@ def main(argv: list[str] | None = None) -> int:
 def collect_evaluations(
     documents: Sequence[DatasetExample],
     client: OpenAI,
+    configs: Sequence[ApproachConfig],
 ) -> tuple[InvoiceEvaluation, ...]:
-    """Score the baseline and both vision section-agent approaches."""
+    """Score the baseline, both vision approaches, and the text-layer approach."""
+    baseline, *section_configs = configs
     evaluations: list[InvoiceEvaluation] = []
-    evaluations.extend(_baseline(documents, client, load_baseline_config()))
-    for approach in _SECTION_APPROACHES:
-        evaluations.extend(
-            _section_agents(documents, client, load_approach_config(approach))
-        )
+    evaluations.extend(_baseline(documents, client, baseline))
+    for config in section_configs:
+        evaluations.extend(_section_agents(documents, client, config))
     return tuple(evaluations)
 
 
@@ -132,23 +149,55 @@ def _baseline(
     return evaluations
 
 
+def _result_rows(
+    evaluations: Sequence[InvoiceEvaluation],
+    documents: Sequence[DatasetExample],
+) -> tuple[ResultRow, ...]:
+    """Measured rows, plus photo rows the text-layer approach cannot run."""
+    rows = list(summarize(evaluations))
+    origins = tuple(dict.fromkeys(document.origin for document in documents))
+    for origin in origins:
+        for rendition in _PHOTO_ROWS:
+            rows.append(not_applicable_row(TEXT_LAYER, rendition, origin))
+    return tuple(rows)
+
+
+def _section_reader(client: OpenAI, config: ApproachConfig) -> SectionReader:
+    if config.approach == TEXT_LAYER:
+        return TextLayerSectionReader(client, config)
+    return VisionSectionReader(client, config)
+
+
+def _documents_for_approach(
+    config: ApproachConfig,
+    documents: Sequence[DatasetExample],
+) -> Sequence[DatasetExample]:
+    if config.approach != TEXT_LAYER:
+        return documents
+    return tuple(
+        document for document in documents if document.rendition not in PHOTO_RENDITIONS
+    )
+
+
 def _section_agents(
     documents: Sequence[DatasetExample],
     client: OpenAI,
     config: ApproachConfig,
 ) -> list[InvoiceEvaluation]:
-    reader = VisionSectionReader(client, config)
+    reader = _section_reader(client, config)
+    selected = _documents_for_approach(config, documents)
     graph = compile_document_graph(reader)
     evaluations: list[InvoiceEvaluation] = []
-    total = len(documents)
-    for index, document in enumerate(documents, start=1):
+    total = len(selected)
+    for index, document in enumerate(selected, start=1):
         print(f"{config.approach}: {document.nfe_id} ({index}/{total})", flush=True)
         run = run_document(reader, document.pdf, graph=graph)
         initial_rules = None if run.initial_report is None else run.initial_report.rules
+        rendition = document.rendition if config.approach == TEXT_LAYER else _RENDITION
         evaluations.append(
             judge_reading(
                 approach=config.approach,
-                rendition=_RENDITION,
+                rendition=rendition,
                 origin=document.origin,
                 ground_truth=document.ground_truth,
                 extraction=run.extraction,

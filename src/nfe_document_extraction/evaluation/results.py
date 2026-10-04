@@ -65,6 +65,11 @@ def render_results(
             "outcome is Human review. The single-call baseline does not repair."
         ),
         "",
+        (
+            "Photo renditions are not applicable to the text-layer approach. "
+            "It reads the PDF text layer and skips Simulated photos and Phone photos."
+        ),
+        "",
         "| " + " | ".join(_COLUMNS) + " |",
         "| " + " | ".join("---" for _ in _COLUMNS) + " |",
     ]
@@ -74,6 +79,10 @@ def render_results(
 
 
 def _row(row: ResultRow) -> str:
+    if not row.applicable:
+        gaps = ("n/a",) * (len(_COLUMNS) - 3)
+        cells = (row.approach, row.rendition, row.origin, *gaps)
+        return "| " + " | ".join(cells) + " |"
     cells = (
         row.approach,
         row.rendition,

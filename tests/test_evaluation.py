@@ -3,11 +3,17 @@
 from datetime import date
 from decimal import Decimal
 
+import pytest
 from test_identifier_rules import _extraction, _line_item
 
 from nfe_document_extraction.agents.config import (
+    BASELINE_MODEL_ENV,
     CHEAP_VISION,
+    CHEAP_VISION_MODEL_ENV,
     STRONG_VISION,
+    STRONG_VISION_MODEL_ENV,
+    TEXT_LAYER,
+    TEXT_LAYER_MODEL_ENV,
     load_approach_config,
     load_baseline_config,
 )
@@ -354,10 +360,19 @@ def test_a_repaired_document_stays_caught_by_the_first_validation() -> None:
     assert judged.score.perfect
 
 
-def test_dated_pricing_table_converts_recorded_tokens_to_usd() -> None:
+def test_dated_pricing_table_converts_recorded_tokens_to_usd(monkeypatch) -> None:
+    for name in (
+        BASELINE_MODEL_ENV,
+        CHEAP_VISION_MODEL_ENV,
+        STRONG_VISION_MODEL_ENV,
+        TEXT_LAYER_MODEL_ENV,
+    ):
+        monkeypatch.delenv(name, raising=False)
+
     price = load_baseline_config()
     cheap = load_approach_config(CHEAP_VISION)
     strong = load_approach_config(STRONG_VISION)
+    text_layer = load_approach_config(TEXT_LAYER)
 
     assert price.model == "gpt-4.1-mini-2025-04-14"
     assert price.pricing_as_of == date(2026, 10, 3)
@@ -370,3 +385,34 @@ def test_dated_pricing_table_converts_recorded_tokens_to_usd() -> None:
     assert token_cost_usd(1_000_000, 0, 1_000_000, cheap) == Decimal("2.00")
     assert token_cost_usd(1_000_000, 0, 1_000_000, strong) == Decimal(10)
     assert token_cost_usd(1_000_000, 500_000, 0, strong) == Decimal("1.25")
+    assert text_layer.approach == "text layer + text model"
+    assert text_layer.model == "gpt-4.1-mini-2025-04-14"
+    assert text_layer.pricing_as_of == date(2026, 10, 3)
+    assert token_cost_usd(1_000_000, 0, 1_000_000, text_layer) == Decimal("2.00")
+
+
+def test_env_model_override_keeps_the_approach_and_uses_the_snapshot_price(
+    monkeypatch,
+) -> None:
+    monkeypatch.setenv(STRONG_VISION_MODEL_ENV, "gpt-4.1-mini-2025-04-14")
+
+    strong = load_approach_config(STRONG_VISION)
+
+    assert strong.approach == "strong vision"
+    assert strong.model == "gpt-4.1-mini-2025-04-14"
+    assert token_cost_usd(1_000_000, 0, 1_000_000, strong) == Decimal("2.00")
+
+
+def test_an_unpriced_env_model_is_rejected(monkeypatch) -> None:
+    monkeypatch.setenv(BASELINE_MODEL_ENV, "gpt-not-priced")
+
+    with pytest.raises(ValueError, match="pricing table"):
+        load_baseline_config()
+
+
+def test_a_blank_env_model_keeps_the_pin(monkeypatch) -> None:
+    monkeypatch.setenv(STRONG_VISION_MODEL_ENV, "   ")
+
+    strong = load_approach_config(STRONG_VISION)
+
+    assert strong.model == "gpt-4.1-2025-04-14"
