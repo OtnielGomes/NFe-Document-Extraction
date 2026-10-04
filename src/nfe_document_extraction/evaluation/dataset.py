@@ -1,4 +1,4 @@
-"""Load the published synthetic DANFE renditions."""
+"""Load the published synthetic set."""
 
 from __future__ import annotations
 

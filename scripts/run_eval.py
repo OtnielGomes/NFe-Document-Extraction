@@ -43,7 +43,6 @@ from nfe_document_extraction.graph import compile_document_graph, run_document
 from nfe_document_extraction.validation import DocumentOutcome
 
 _ROOT = Path(__file__).resolve().parent.parent
-_RENDITION = "digital PDF"
 _SECTION_APPROACHES = (CHEAP_VISION, STRONG_VISION, TEXT_LAYER)
 _PHOTO_ROWS = (SIMULATED_PHOTO, PHONE_PHOTO)
 
@@ -131,7 +130,7 @@ def _baseline(
         evaluations.append(
             judge_reading(
                 approach=config.approach,
-                rendition=_RENDITION,
+                rendition=document.rendition,
                 origin=document.origin,
                 ground_truth=document.ground_truth,
                 extraction=reading.extraction,
@@ -193,11 +192,10 @@ def _section_agents(
         print(f"{config.approach}: {document.nfe_id} ({index}/{total})", flush=True)
         run = run_document(reader, document.pdf, graph=graph)
         initial_rules = None if run.initial_report is None else run.initial_report.rules
-        rendition = document.rendition if config.approach == TEXT_LAYER else _RENDITION
         evaluations.append(
             judge_reading(
                 approach=config.approach,
-                rendition=rendition,
+                rendition=document.rendition,
                 origin=document.origin,
                 ground_truth=document.ground_truth,
                 extraction=run.extraction,

@@ -125,7 +125,14 @@ def test_text_layer_skips_photo_renditions(monkeypatch, tmp_path, capsys) -> Non
     assert simulated_pdf not in text_calls
     assert phone_pdf not in text_calls
     text = output.read_text(encoding="utf-8")
+    assert "| single-call baseline | digital PDF | synthetic | 1 |" in text
+    assert "| single-call baseline | simulated photo | synthetic | 1 |" in text
+    assert "| single-call baseline | phone photo | synthetic | 1 |" in text
+    assert "| cheap vision | simulated photo | synthetic | 1 |" in text
+    assert "| strong vision | phone photo | synthetic | 1 |" in text
     assert "| text layer + text model | digital PDF | synthetic | 1 |" in text
+    assert "| text layer + text model | simulated photo | synthetic | 1 |" not in text
+    assert "| text layer + text model | phone photo | synthetic | 1 |" not in text
     assert _not_applicable("simulated photo") in text
     assert _not_applicable("phone photo") in text
     captured = capsys.readouterr()

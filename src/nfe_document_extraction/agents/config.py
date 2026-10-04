@@ -52,8 +52,9 @@ def load_approach_config(approach: str) -> ApproachConfig:
     """
     payload = _pricing_table()
     pinned = _approach_row(payload, approach)
-    model = _selected_model(approach, str(pinned["model"]))
-    priced = _model_row(payload, model)
+    pinned_model = str(pinned["model"])
+    model = _selected_model(approach, pinned_model)
+    priced = pinned if model == pinned_model else _model_row(payload, model)
     if priced is None:
         known = ", ".join(_known_models(payload))
         env_name = _MODEL_ENV[approach]
