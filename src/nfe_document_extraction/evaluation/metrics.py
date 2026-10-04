@@ -63,15 +63,16 @@ def _row(key: tuple[str, str, str], invoices: Sequence[InvoiceEvaluation]) -> Re
     approach, rendition, origin = key
     clean = tuple(invoice for invoice in invoices if not invoice.planted_error)
     planted = tuple(invoice for invoice in invoices if invoice.planted_error)
-    scored = tuple(invoice.score for invoice in clean if invoice.score is not None)
-    field_correct = sum(score.field_correct for score in scored)
-    field_opportunities = sum(score.field_opportunities for score in scored)
+    accurate = tuple(invoice.score for invoice in clean if invoice.score is not None)
+    readable = tuple(invoice.score for invoice in invoices if invoice.score is not None)
+    field_correct = sum(score.field_correct for score in accurate)
+    field_opportunities = sum(score.field_opportunities for score in accurate)
     similarity_total = sum(
-        (sum(score.description_similarities, Decimal(0)) for score in scored),
+        (sum(score.description_similarities, Decimal(0)) for score in readable),
         Decimal(0),
     )
-    aligned_items = sum(len(score.description_similarities) for score in scored)
-    perfect_count = sum(score.perfect for score in scored)
+    aligned_items = sum(len(score.description_similarities) for score in readable)
+    perfect_count = sum(score.perfect for score in readable)
     return ResultRow(
         approach=approach,
         rendition=rendition,
@@ -79,7 +80,7 @@ def _row(key: tuple[str, str, str], invoices: Sequence[InvoiceEvaluation]) -> Re
         documents=len(invoices),
         field_accuracy=_ratio(field_correct, field_opportunities),
         description_similarity=_ratio(similarity_total, aligned_items),
-        perfect_invoice_rate=_ratio(perfect_count, len(clean)),
+        perfect_invoice_rate=_ratio(perfect_count, len(invoices)),
         cost_per_invoice_usd=_mean_cost(invoices),
         latency_median_seconds=_percentile(
             [invoice.latency_seconds for invoice in invoices],

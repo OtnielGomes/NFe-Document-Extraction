@@ -6,17 +6,25 @@ import base64
 import io
 import time
 from dataclasses import dataclass
-from json import JSONDecodeError
 from pathlib import Path
+from typing import cast
 
 import pypdfium2 as pdfium  # type: ignore[import-untyped]
-from openai import ContentFilterFinishReasonError, LengthFinishReasonError, OpenAI
+from openai import OpenAI
+from openai.lib._parsing import type_to_response_format_param
 from openai.types.responses import EasyInputMessageParam
+from openai.types.responses.response_format_text_json_schema_config_param import (
+    ResponseFormatTextJSONSchemaConfigParam,
+)
 from openai.types.responses.response_input_image_param import ResponseInputImageParam
 from openai.types.responses.response_input_message_content_list_param import (
     ResponseInputContentParam,
 )
 from openai.types.responses.response_input_text_param import ResponseInputTextParam
+from openai.types.responses.response_text_config_param import ResponseTextConfigParam
+from openai.types.shared_params.response_format_json_schema import (
+    ResponseFormatJSONSchema,
+)
 from pydantic import ValidationError
 
 from nfe_document_extraction.agents.config import BaselineConfig, load_baseline_config
@@ -61,30 +69,19 @@ def extract_baseline(
     if not images:
         return _failed(ExtractionFailure.PARSE_FAILURE, latency_seconds=0.0)
     started = time.perf_counter()
-    try:
-        response = client.responses.parse(
-            model=resolved.model,
-            instructions=_PROMPT,
-            input=[_message(images)],
-            text_format=BaselinePayload,
-            temperature=0,
-            max_output_tokens=_MAX_OUTPUT_TOKENS,
-            store=False,
-        )
-    except (
-        ValidationError,
-        JSONDecodeError,
-        LengthFinishReasonError,
-        ContentFilterFinishReasonError,
-    ):
-        return _failed(
-            ExtractionFailure.PARSE_FAILURE,
-            latency_seconds=time.perf_counter() - started,
-        )
+    response = client.responses.create(
+        model=resolved.model,
+        instructions=_PROMPT,
+        input=[_message(images)],
+        text=_strict_text_format(),
+        temperature=0,
+        max_output_tokens=_MAX_OUTPUT_TOKENS,
+        store=False,
+    )
     latency = time.perf_counter() - started
     input_tokens, cached_input_tokens, output_tokens = _usage(response)
     extraction, failure = interpret_baseline_output(
-        getattr(response, "output_parsed", None),
+        _parse_output(getattr(response, "output_text", None)),
         _refusal(response),
     )
     return BaselineReading(
@@ -138,6 +135,32 @@ def _to_extraction(payload: BaselinePayload) -> Extraction:
             LineItem.model_validate(item.model_dump()) for item in payload.line_items
         ),
     )
+
+
+def _strict_text_format() -> ResponseTextConfigParam:
+    raw = type_to_response_format_param(BaselinePayload)
+    if not isinstance(raw, dict) or raw.get("type") != "json_schema":
+        raise RuntimeError("baseline schema must be json_schema")
+    json_schema = cast(ResponseFormatJSONSchema, raw)["json_schema"]
+    schema = json_schema.get("schema")
+    if schema is None:
+        raise RuntimeError("baseline schema is empty")
+    format_config: ResponseFormatTextJSONSchemaConfigParam = {
+        "type": "json_schema",
+        "name": json_schema["name"],
+        "schema": schema,
+        "strict": True,
+    }
+    return {"format": format_config}
+
+
+def _parse_output(text: object) -> BaselinePayload | None:
+    if not isinstance(text, str) or not text.strip():
+        return None
+    try:
+        return BaselinePayload.model_validate_json(text)
+    except ValidationError:
+        return None
 
 
 def _message(images: tuple[bytes, ...]) -> EasyInputMessageParam:

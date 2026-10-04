@@ -58,8 +58,14 @@ class _Message:
 
 
 class _Response:
-    output_parsed = None
+    output_text = ""
     output = (_Message(),)
+    usage = _Usage()
+
+
+class _InvalidResponse:
+    output_text = "not json"
+    output = ()
     usage = _Usage()
 
 
@@ -68,10 +74,8 @@ class _Responses:
         self.response = response
         self.kwargs: dict[str, object] = {}
 
-    def parse(self, **kwargs: object) -> object:
+    def create(self, **kwargs: object) -> object:
         self.kwargs = kwargs
-        if self.response is None:
-            BaselinePayload.model_validate({})
         return self.response
 
 
@@ -164,7 +168,9 @@ def test_refusal_is_an_extraction_error() -> None:
     assert isinstance(instructions, str)
     assert "DANFE" in instructions
     assert client.responses.kwargs["model"] == load_baseline_config().model
-    assert client.responses.kwargs["text_format"] is BaselinePayload
+    text_format = client.responses.kwargs["text"]
+    assert isinstance(text_format, dict)
+    assert text_format["format"]["strict"] is True
     content = client.responses.kwargs["input"]
     assert isinstance(content, list)
     parts = content[0]["content"]
@@ -176,13 +182,15 @@ def test_refusal_is_an_extraction_error() -> None:
     assert parts[1]["detail"] == "high"
 
 
-def test_parse_failure_does_not_crash() -> None:
-    client = _Client(None)
+def test_parse_failure_keeps_recorded_tokens() -> None:
+    client = _Client(_InvalidResponse())
 
     reading = extract_baseline(client, _PDF.read_bytes())  # type: ignore[arg-type]
 
     assert reading.extraction is None
     assert reading.failure is ExtractionFailure.PARSE_FAILURE
+    assert reading.input_tokens == 20
+    assert reading.output_tokens == 5
 
 
 def test_unparsed_output_is_a_parse_failure() -> None:
@@ -228,6 +236,33 @@ def test_planted_rule_failure_is_detection_not_a_clean_validator_catch() -> None
     assert clean.validator_caught_error
     assert clean.score is not None
     assert clean.score.perfect is False
+
+
+def test_unsupported_component_is_not_counted_as_a_validator_error() -> None:
+    invoice = _extraction()
+    reviewed = _extraction(
+        unsupported_components={
+            "import_tax": True,
+            "returned_ipi": False,
+            "icms_relief": False,
+            "fcp_st": False,
+        }
+    )
+
+    judged = judge_reading(
+        approach="single-call baseline",
+        rendition="digital PDF",
+        origin="synthetic",
+        ground_truth=invoice,
+        extraction=reviewed,
+        extraction_failure=None,
+        planted_rule=None,
+        cost_usd=Decimal("0.01"),
+        latency_seconds=1,
+        today=_AS_OF,
+    )
+
+    assert judged.validator_caught_error is False
 
 
 def test_failed_extraction_of_a_planted_document_is_not_detected() -> None:

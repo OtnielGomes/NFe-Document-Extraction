@@ -211,13 +211,15 @@ def test_planted_error_documents_are_excluded_from_field_accuracy() -> None:
     )
     planted = _invoice(
         planted_error=True,
-        score=score_document(_extraction(invoice_total=1), _extraction()),
+        score=score_document(_extraction(), _extraction()),
         planted_error_detected=True,
     )
 
     row = summarize((clean, planted))[0]
 
     assert row.field_accuracy == Decimal(28) / Decimal(29)
+    assert row.description_similarity == Decimal(1)
+    assert row.perfect_invoice_rate == Decimal("0.5")
     assert row.planted_detection_rate == Decimal(1)
     assert row.documents == 2
 

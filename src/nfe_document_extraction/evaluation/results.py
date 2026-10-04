@@ -49,11 +49,16 @@ def render_results(
             "Field accuracy is an exact match after normalization. Product codes and "
             "descriptions are compared after casefold, accent removal, and whitespace "
             "collapse. Each missing item and each spurious item counts as one error. "
-            "Planted-error documents are excluded from field accuracy, description "
-            "similarity, and the perfect-invoice rate, and are scored by detection rate."
+            "Planted-error documents are excluded from field accuracy and are scored "
+            "by detection rate. Description similarity and the perfect-invoice rate "
+            "still include them, because ground truth is the printed value."
         ),
         "",
-        "Latency p95 uses linear interpolation between closest ranks.",
+        (
+            "Latency p95 uses linear interpolation between closest ranks. "
+            "Errors caught by the validator counts clean documents with at least one "
+            "failing validation rule."
+        ),
         "",
         "| " + " | ".join(_COLUMNS) + " |",
         "| " + " | ".join("---" for _ in _COLUMNS) + " |",

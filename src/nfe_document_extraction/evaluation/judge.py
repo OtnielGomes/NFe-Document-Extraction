@@ -39,7 +39,7 @@ def judge_reading(
         score = score_document(extraction, ground_truth)
         report = validate(extraction, today=today)
         if planted_rule is None:
-            validator_caught_error = not report.accepted
+            validator_caught_error = any(rule.failures for rule in report.rules)
         else:
             planted_error_detected = any(
                 rule.rule_id == planted_rule and rule.failures for rule in report.rules
