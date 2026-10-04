@@ -20,6 +20,8 @@ _COLUMNS = (
     "Latency median (s)",
     "Latency p95 (s)",
     "Errors caught by the validator",
+    "Errors fixed by repair",
+    "Errors reaching Human review",
     "Planted-error detection rate",
     "Extraction errors",
 )
@@ -57,7 +59,10 @@ def render_results(
         (
             "Latency p95 uses linear interpolation between closest ranks. "
             "Errors caught by the validator counts clean documents with at least one "
-            "failing validation rule."
+            "failing validation rule on the first reading. "
+            "Errors fixed by repair counts clean documents accepted after the single "
+            "Repair attempt. Errors reaching Human review counts clean documents whose "
+            "outcome is Human review. The single-call baseline does not repair."
         ),
         "",
         "| " + " | ".join(_COLUMNS) + " |",
@@ -81,6 +86,8 @@ def _row(row: ResultRow) -> str:
         f"{row.latency_median_seconds:.3f}",
         f"{row.latency_p95_seconds:.3f}",
         str(row.validator_errors_caught),
+        str(row.errors_fixed_by_repair),
+        str(row.errors_reaching_human_review),
         _decimal(row.planted_detection_rate, "0.0001"),
         str(row.extraction_failures),
     )

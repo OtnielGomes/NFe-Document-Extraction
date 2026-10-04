@@ -29,6 +29,8 @@ class InvoiceEvaluation:
     planted_error_detected: bool
     cost_usd: Decimal
     latency_seconds: float
+    repaired: bool = False
+    reached_human_review: bool = False
 
 
 @dataclass(frozen=True)
@@ -46,6 +48,8 @@ class ResultRow:
     latency_median_seconds: float
     latency_p95_seconds: float
     validator_errors_caught: int
+    errors_fixed_by_repair: int
+    errors_reaching_human_review: int
     planted_detection_rate: Decimal | None
     extraction_failures: int
 
@@ -92,6 +96,10 @@ def _row(key: tuple[str, str, str], invoices: Sequence[InvoiceEvaluation]) -> Re
         ),
         validator_errors_caught=sum(
             invoice.validator_caught_error for invoice in clean
+        ),
+        errors_fixed_by_repair=sum(invoice.repaired for invoice in clean),
+        errors_reaching_human_review=sum(
+            invoice.reached_human_review for invoice in clean
         ),
         planted_detection_rate=_ratio(
             sum(invoice.planted_error_detected for invoice in planted),

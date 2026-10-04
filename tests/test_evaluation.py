@@ -5,7 +5,12 @@ from decimal import Decimal
 
 from test_identifier_rules import _extraction, _line_item
 
-from nfe_document_extraction.agents.config import load_baseline_config
+from nfe_document_extraction.agents.config import (
+    CHEAP_VISION,
+    STRONG_VISION,
+    load_approach_config,
+    load_baseline_config,
+)
 from nfe_document_extraction.evaluation import (
     DocumentScore,
     ExtractionFailure,
@@ -15,6 +20,8 @@ from nfe_document_extraction.evaluation import (
     summarize,
     token_cost_usd,
 )
+from nfe_document_extraction.evaluation.judge import judge_reading
+from nfe_document_extraction.validation import validate
 
 
 def test_identical_invoice_is_a_perfect_invoice() -> None:
@@ -187,6 +194,8 @@ def _invoice(
     planted_error_detected: bool = False,
     cost_usd: Decimal = Decimal("0.01"),
     latency_seconds: float = 1.0,
+    repaired: bool = False,
+    reached_human_review: bool = False,
 ) -> InvoiceEvaluation:
     resolved = score
     if use_score and resolved is None:
@@ -202,6 +211,8 @@ def _invoice(
         planted_error_detected=planted_error_detected,
         cost_usd=cost_usd,
         latency_seconds=latency_seconds,
+        repaired=repaired,
+        reached_human_review=reached_human_review,
     )
 
 
@@ -291,10 +302,71 @@ def test_results_table_has_one_row_per_approach_rendition_and_origin() -> None:
     assert "Do not edit by hand." in text
 
 
+def test_repair_and_human_review_are_counted_on_clean_documents_only() -> None:
+    invoices = (
+        _invoice(repaired=True, validator_caught_error=True),
+        _invoice(reached_human_review=True, validator_caught_error=True),
+        _invoice(
+            planted_error=True,
+            repaired=True,
+            reached_human_review=True,
+            planted_error_detected=True,
+        ),
+    )
+
+    row = summarize(invoices)[0]
+    text = render_results(
+        (row,),
+        model_snapshot="gpt-4.1-mini-2025-04-14",
+        pricing_as_of="2026-10-03",
+    )
+
+    assert row.errors_fixed_by_repair == 1
+    assert row.errors_reaching_human_review == 1
+    assert row.validator_errors_caught == 2
+    assert "Errors fixed by repair" in text
+    assert "Errors reaching Human review" in text
+    assert "single Repair attempt" in text
+
+
+def test_a_repaired_document_stays_caught_by_the_first_validation() -> None:
+    initial = validate(_extraction(invoice_total=1), today=date(2026, 10, 3))
+
+    judged = judge_reading(
+        approach="cheap vision",
+        rendition="digital PDF",
+        origin="synthetic",
+        ground_truth=_extraction(),
+        extraction=_extraction(),
+        extraction_failure=None,
+        planted_rule=None,
+        cost_usd=Decimal("0.01"),
+        latency_seconds=1,
+        today=date(2026, 10, 3),
+        repaired=True,
+        initial_rules=initial.rules,
+    )
+
+    assert judged.validator_caught_error
+    assert judged.repaired
+    assert judged.reached_human_review is False
+    assert judged.score is not None
+    assert judged.score.perfect
+
+
 def test_dated_pricing_table_converts_recorded_tokens_to_usd() -> None:
     price = load_baseline_config()
+    cheap = load_approach_config(CHEAP_VISION)
+    strong = load_approach_config(STRONG_VISION)
 
     assert price.model == "gpt-4.1-mini-2025-04-14"
     assert price.pricing_as_of == date(2026, 10, 3)
+    assert cheap.model == price.model
+    assert cheap.pricing_as_of == price.pricing_as_of
+    assert strong.model == "gpt-4.1-2025-04-14"
+    assert strong.pricing_as_of == date(2026, 10, 3)
     assert token_cost_usd(1_000_000, 0, 1_000_000, price) == Decimal("2.00")
     assert token_cost_usd(1_000_000, 500_000, 0, price) == Decimal("0.25")
+    assert token_cost_usd(1_000_000, 0, 1_000_000, cheap) == Decimal("2.00")
+    assert token_cost_usd(1_000_000, 0, 1_000_000, strong) == Decimal(10)
+    assert token_cost_usd(1_000_000, 500_000, 0, strong) == Decimal("1.25")

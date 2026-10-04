@@ -5,6 +5,7 @@ description = "Turn a DANFE into structured data and state whether each field ca
 requires-python = ">=3.12"
 dependencies = [
     "brazilfiscalreport>=1.2.0",
+    "langgraph>=1.2.12",
     "openai>=3.24.0",
     "pillow>=12.3.0",
     "pydantic>=2.13.5",

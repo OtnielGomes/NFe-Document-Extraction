@@ -72,6 +72,14 @@ class LineItemPayload(BaseModel):
     item_total: str = Field(description="Line total in reais, as printed.")
 
 
+class LineItemsSectionPayload(BaseModel):
+    """Line items agent response. The product rows only."""
+
+    model_config = _CONFIG
+
+    line_items: list[LineItemPayload]
+
+
 class BaselinePayload(BaseModel):
     """One model call reading the whole DANFE."""
 
