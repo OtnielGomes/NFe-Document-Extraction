@@ -19,6 +19,8 @@ def _isolate_langsmith(monkeypatch: pytest.MonkeyPatch) -> Iterator[None]:
     monkeypatch.delenv("LANGSMITH_TRACING_V2", raising=False)
     monkeypatch.delenv("LANGCHAIN_TRACING_V2", raising=False)
     monkeypatch.delenv("LANGCHAIN_TRACING", raising=False)
+    monkeypatch.delenv("LANGSMITH_HIDE_INPUTS", raising=False)
+    monkeypatch.delenv("LANGSMITH_HIDE_OUTPUTS", raising=False)
     token = tracing._forced_off.set(False)
     yield
     get_env_var.cache_clear()

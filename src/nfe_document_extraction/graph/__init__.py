@@ -3,6 +3,7 @@
 from nfe_document_extraction.graph.run import (
     GraphRun,
     NonFlaggedFieldEdit,
+    apply_extraction_edits,
     compile_document_graph,
     document_graph_nodes,
     run_document,
@@ -12,6 +13,7 @@ from nfe_document_extraction.graph.run import (
 __all__ = [
     "GraphRun",
     "NonFlaggedFieldEdit",
+    "apply_extraction_edits",
     "compile_document_graph",
     "document_graph_nodes",
     "run_document",

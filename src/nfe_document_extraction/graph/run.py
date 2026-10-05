@@ -481,6 +481,17 @@ def _apply_human_edits(
     }
 
 
+def apply_extraction_edits(
+    extraction: Extraction, edits: Mapping[str, object]
+) -> Extraction:
+    """Return a copy with these field edits applied.
+
+    Raises ``ValidationError`` or ``ValueError`` when a value does not fit
+    the field. Does not check whether the field is flagged.
+    """
+    return _apply_field_edits(extraction, edits)
+
+
 def _apply_field_edits(
     extraction: Extraction, edits: Mapping[str, object]
 ) -> Extraction:
