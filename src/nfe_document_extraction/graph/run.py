@@ -47,6 +47,7 @@ class DocumentState(TypedDict, total=False):
     """Shared graph state. Section nodes write disjoint keys."""
 
     pdf: bytes
+    pages: tuple[bytes, ...]
     header: Header
     line_items: tuple[LineItem, ...]
     header_failure: ExtractionFailure | None
@@ -87,17 +88,20 @@ def run_document(
     *,
     today: date | None = None,
     graph: _CompiledGraph | None = None,
+    pages: tuple[bytes, ...] = (),
 ) -> GraphRun:
     """Read a DANFE with the Header and Line items agents.
 
-    Both agents see the whole document. Routing is code: a failing document
-    is sent once to the agents that own the flagged fields, and a document
-    that still fails is ready for human review. ``graph`` is a compiled graph
-    from :func:`compile_document_graph` for the same reader.
+    Both agents see the whole document. ``pages`` are Simulated photo images;
+    a digital PDF leaves ``pages`` empty and is rasterized by the vision reader.
+    Routing is code: a failing document is sent once to the agents that own
+    the flagged fields, and a document that still fails is ready for human
+    review. ``graph`` is a compiled graph from :func:`compile_document_graph`
+    for the same reader.
     """
     compiled = compile_document_graph(reader, today=today) if graph is None else graph
     started = time.perf_counter()
-    state = compiled.invoke({"pdf": pdf})
+    state = compiled.invoke({"pdf": pdf, "pages": pages})
     elapsed = time.perf_counter() - started
     return _graph_run(state, elapsed)
 
@@ -190,7 +194,11 @@ def _read(
     section: Section,
 ) -> dict[str, object]:
     reading = reader.read(
-        SectionRequest(section=section, document=state["pdf"], notes=())
+        SectionRequest(
+            section=section,
+            document=state["pdf"],
+            pages=_pages(state),
+        )
     )
     return _apply_reading(section, reading, repair=False)
 
@@ -204,7 +212,12 @@ def _repair(
     if not notes:
         return {}
     reading = reader.read(
-        SectionRequest(section=section, document=state["pdf"], notes=notes)
+        SectionRequest(
+            section=section,
+            document=state["pdf"],
+            notes=notes,
+            pages=_pages(state),
+        )
     )
     return _apply_reading(section, reading, repair=True)
 
@@ -383,6 +396,13 @@ def _section_owning(field: str) -> Section | None:
     if field.startswith("line_items["):
         return Section.LINE_ITEMS
     return None
+
+
+def _pages(state: DocumentState) -> tuple[bytes, ...]:
+    pages = state.get("pages", ())
+    if isinstance(pages, tuple):
+        return pages
+    return ()
 
 
 def _notes(state: DocumentState, section: Section) -> tuple[RepairFieldNote, ...]:

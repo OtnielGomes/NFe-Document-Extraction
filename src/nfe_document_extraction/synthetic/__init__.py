@@ -8,6 +8,7 @@ from nfe_document_extraction.synthetic.generate import (
     generate_synthetic_set,
     write_synthetic_set,
 )
+from nfe_document_extraction.synthetic.photos import simulate_photo_pages
 
 __all__ = [
     "SYNTHETIC_COUNT",
@@ -15,5 +16,6 @@ __all__ = [
     "PlantedError",
     "SyntheticDocument",
     "generate_synthetic_set",
+    "simulate_photo_pages",
     "write_synthetic_set",
 ]

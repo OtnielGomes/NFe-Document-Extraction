@@ -99,10 +99,16 @@ def response_refusal(response: object) -> str | None:
     return None
 
 
-def _image_input(png: bytes) -> ResponseInputImageParam:
-    encoded = base64.b64encode(png).decode("ascii")
+def _image_input(image: bytes) -> ResponseInputImageParam:
+    encoded = base64.b64encode(image).decode("ascii")
     return {
         "type": "input_image",
-        "image_url": f"data:image/png;base64,{encoded}",
+        "image_url": f"data:{_image_mime(image)};base64,{encoded}",
         "detail": "high",
     }
+
+
+def _image_mime(image: bytes) -> str:
+    if image.startswith(b"\xff\xd8\xff"):
+        return "image/jpeg"
+    return "image/png"

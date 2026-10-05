@@ -1,10 +1,13 @@
 """Single-call baseline: strict schema, repository prompt, extraction errors."""
 
+import base64
+import io
 from datetime import date
 from decimal import Decimal
 from pathlib import Path
 
 from openai.lib._parsing import type_to_response_format_param
+from pypdf import PdfReader
 from test_identifier_rules import (
     ACCESS_KEY,
     ISSUER_CNPJ,
@@ -24,7 +27,11 @@ from nfe_document_extraction.agents.schema import (
     UnsupportedPayload,
 )
 from nfe_document_extraction.evaluation import ExtractionFailure
-from nfe_document_extraction.evaluation.dataset import load_synthetic_pdfs
+from nfe_document_extraction.evaluation.dataset import (
+    DIGITAL_PDF,
+    SIMULATED_PHOTO,
+    load_synthetic_pdfs,
+)
 from nfe_document_extraction.evaluation.judge import judge_reading
 
 _PDF = (
@@ -182,6 +189,20 @@ def test_refusal_is_an_extraction_error() -> None:
     assert parts[1]["detail"] == "high"
 
 
+def test_baseline_sends_simulated_photo_pages() -> None:
+    client = _Client(_InvalidResponse())
+    pages = (b"\xff\xd8\xff\x00page-one",)
+
+    reading = extract_baseline(client, b"not a pdf", pages=pages)  # type: ignore[arg-type]
+
+    assert reading.failure is ExtractionFailure.PARSE_FAILURE
+    content = client.responses.kwargs["input"]
+    assert isinstance(content, list)
+    image = content[0]["content"][1]
+    encoded = base64.b64encode(pages[0]).decode("ascii")
+    assert image["image_url"] == f"data:image/jpeg;base64,{encoded}"
+
+
 def test_parse_failure_keeps_recorded_tokens() -> None:
     client = _Client(_InvalidResponse())
 
@@ -288,10 +309,35 @@ def test_synthetic_loader_reads_ground_truth_and_planted_rules() -> None:
     documents = load_synthetic_pdfs(
         Path(__file__).resolve().parents[1] / "data" / "synthetic"
     )
+    pdfs = [document for document in documents if document.input_type == DIGITAL_PDF]
+    photos = [
+        document for document in documents if document.input_type == SIMULATED_PHOTO
+    ]
 
-    assert len(documents) == 100
-    assert documents[0].nfe_id == "synthetic-001"
+    assert len(documents) == 200
+    assert [document.nfe_id for document in pdfs] == [
+        f"synthetic-{index:03d}" for index in range(1, 101)
+    ]
+    assert [document.nfe_id for document in photos] == [
+        document.nfe_id for document in pdfs
+    ]
     assert documents[0].origin == "synthetic"
     assert documents[0].ground_truth.header.model == "55"
     assert documents[0].pdf.startswith(b"%PDF")
-    assert sum(document.planted_rule is not None for document in documents) == 15
+    assert all(
+        pdf.ground_truth == photo.ground_truth
+        for pdf, photo in zip(pdfs, photos, strict=True)
+    )
+    assert all(
+        pdf.planted_rule == photo.planted_rule
+        for pdf, photo in zip(pdfs, photos, strict=True)
+    )
+    assert all(photo.pages and photo.pdf == b"" for photo in photos)
+    assert sum(document.planted_rule is not None for document in pdfs) == 15
+    multipage = next(
+        document
+        for document in pdfs
+        if len(PdfReader(io.BytesIO(document.pdf)).pages) > 1
+    )
+    photo = next(item for item in photos if item.nfe_id == multipage.nfe_id)
+    assert len(photo.pages) == len(PdfReader(io.BytesIO(multipage.pdf)).pages)

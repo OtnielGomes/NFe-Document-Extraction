@@ -10,8 +10,10 @@ from test_identifier_rules import _extraction
 
 from nfe_document_extraction.agents.baseline import BaselineReading
 from nfe_document_extraction.agents.config import ApproachConfig
+from nfe_document_extraction.domain import Extraction
 from nfe_document_extraction.env import load_env_file
 from nfe_document_extraction.graph import GraphRun
+from nfe_document_extraction.synthetic import SyntheticDocument, write_synthetic_set
 from nfe_document_extraction.validation import DocumentOutcome, validate
 from scripts import run_eval
 
@@ -86,6 +88,73 @@ def test_eval_compares_baseline_with_cheap_and_strong_vision(
     assert "text layer + text model: synthetic-001 (1/1)" in captured.out
 
 
+def test_simulated_photo_is_scored_separately_and_sent_as_page_images(
+    monkeypatch, tmp_path, capsys
+) -> None:
+    dataset = _written_invoice(tmp_path)
+    photo_pages = tuple(
+        path.read_bytes()
+        for path in sorted(
+            (dataset / "synthetic-001" / "simulated-photo").glob("page-*.jpg")
+        )
+    )
+    seen: list[tuple[str, tuple[bytes, ...]]] = []
+
+    def baseline(
+        client: object,
+        pdf: bytes,
+        *,
+        config: ApproachConfig,
+        pages: tuple[bytes, ...] = (),
+    ) -> BaselineReading:
+        seen.append((config.approach, pages))
+        return _baseline(client, pdf, config=config)
+
+    def run_document(
+        reader: _RecordingReader,
+        pdf: bytes,
+        *,
+        today: object = None,
+        graph: object = None,
+        pages: tuple[bytes, ...] = (),
+    ) -> GraphRun:
+        seen.append((reader.config.approach, pages))
+        return _graph_run(reader, pdf, today=today, graph=graph)
+
+    monkeypatch.setattr(run_eval, "load_env_file", lambda path: None)
+    monkeypatch.setenv("OPENAI_API_KEY", "test-key")
+    monkeypatch.setattr(run_eval, "OpenAI", lambda: object())
+    monkeypatch.setattr(run_eval, "VisionSectionReader", _RecordingReader)
+    monkeypatch.setattr(run_eval, "TextLayerSectionReader", _RecordingReader)
+    monkeypatch.setattr(run_eval, "compile_document_graph", lambda reader: reader)
+    monkeypatch.setattr(run_eval, "extract_baseline", baseline)
+    monkeypatch.setattr(run_eval, "run_document", run_document)
+    output = tmp_path / "results.md"
+
+    code = run_eval.main(["--dataset", str(dataset), "--output", str(output)])
+
+    assert code == 0
+    assert photo_pages
+    assert ("single-call baseline", ()) in seen
+    assert ("single-call baseline", photo_pages) in seen
+    assert ("cheap vision", photo_pages) in seen
+    assert ("strong vision", photo_pages) in seen
+    assert ("text layer + text model", ()) in seen
+    assert ("text layer + text model", photo_pages) not in seen
+    text = output.read_text(encoding="utf-8")
+    assert "| single-call baseline | digital PDF | synthetic | 1 |" in text
+    assert "| single-call baseline | simulated photo | synthetic | 1 |" in text
+    assert "| cheap vision | digital PDF | synthetic | 1 |" in text
+    assert "| cheap vision | simulated photo | synthetic | 1 |" in text
+    assert "| strong vision | digital PDF | synthetic | 1 |" in text
+    assert "| strong vision | simulated photo | synthetic | 1 |" in text
+    assert "| text layer + text model | digital PDF | synthetic | 1 |" in text
+    assert _not_applicable("simulated photo") in text
+    assert "accuracy drop from PDF to photo" in text
+    captured = capsys.readouterr()
+    assert "text layer + text model: synthetic-001 (1/1)" in captured.out
+
+
 def test_text_layer_skips_photo_renditions(monkeypatch, tmp_path, capsys) -> None:
     dataset = _dataset_with_photos(tmp_path)
     calls: list[tuple[str, bytes]] = []
@@ -96,6 +165,7 @@ def test_text_layer_skips_photo_renditions(monkeypatch, tmp_path, capsys) -> Non
         *,
         today: object = None,
         graph: object = None,
+        pages: tuple[bytes, ...] = (),
     ) -> GraphRun:
         calls.append((reader.config.approach, pdf))
         return _graph_run(reader, pdf, today=today, graph=graph)
@@ -183,6 +253,26 @@ def _not_applicable(rendition: str) -> str:
     return f"| text layer + text model | {rendition} | synthetic | {gaps} |"
 
 
+def _written_invoice(tmp_path: Path) -> Path:
+    folder = _ROOT / "data" / "synthetic" / "synthetic-001"
+    metadata = json.loads((folder / "metadata.json").read_text(encoding="utf-8"))
+    document = SyntheticDocument(
+        nfe_id=metadata["nfe_id"],
+        has_icms_st=metadata["has_icms_st"],
+        origin=metadata["origin"],
+        split=metadata["split"],
+        planted_error=None,
+        xml=(folder / "nfe.xml").read_text(encoding="utf-8"),
+        pdf=(folder / "danfe.pdf").read_bytes(),
+        ground_truth=Extraction.model_validate_json(
+            (folder / "ground_truth.json").read_text(encoding="utf-8")
+        ),
+    )
+    destination = tmp_path / "dataset"
+    write_synthetic_set(destination, (document,))
+    return destination
+
+
 def _dataset_with_photos(tmp_path: Path) -> Path:
     source = _ROOT / "data" / "synthetic" / "synthetic-001"
     dataset = tmp_path / "dataset"
@@ -201,6 +291,12 @@ def _dataset_with_photos(tmp_path: Path) -> Path:
             metadata["rendition"] = rendition
         metadata_path.write_text(json.dumps(metadata), encoding="utf-8")
         (folder / "danfe.pdf").write_bytes(nfe_id.encode())
+        photo_dir = folder / "simulated-photo"
+        if photo_dir.exists():
+            shutil.rmtree(photo_dir)
+        renditions = folder / "renditions.json"
+        if renditions.exists():
+            renditions.unlink()
     return dataset
 
 
@@ -208,7 +304,13 @@ def _openai_must_not_be_called() -> object:
     raise AssertionError("OpenAI client was created")
 
 
-def _baseline(client: object, pdf: bytes, *, config: ApproachConfig) -> BaselineReading:
+def _baseline(
+    client: object,
+    pdf: bytes,
+    *,
+    config: ApproachConfig,
+    pages: tuple[bytes, ...] = (),
+) -> BaselineReading:
     assert config.approach == "single-call baseline"
     return BaselineReading(
         extraction=_extraction(invoice_total=1),
@@ -226,6 +328,7 @@ def _graph_run(
     *,
     today: object = None,
     graph: object = None,
+    pages: tuple[bytes, ...] = (),
 ) -> GraphRun:
     assert graph is reader
     assert reader.config.approach in {

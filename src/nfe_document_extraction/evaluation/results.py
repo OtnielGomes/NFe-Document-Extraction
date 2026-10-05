@@ -70,6 +70,11 @@ def render_results(
             "It reads the PDF text layer and skips Simulated photos and Phone photos."
         ),
         "",
+        (
+            "Compare the digital PDF row with the simulated photo row of the same "
+            "Extraction approach to see the accuracy drop from PDF to photo."
+        ),
+        "",
         "| " + " | ".join(_COLUMNS) + " |",
         "| " + " | ".join("---" for _ in _COLUMNS) + " |",
     ]

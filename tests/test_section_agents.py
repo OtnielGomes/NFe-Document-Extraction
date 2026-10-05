@@ -1,5 +1,6 @@
 """Section agents: strict schemas, repository prompts, pinned snapshots."""
 
+import base64
 import io
 from pathlib import Path
 
@@ -121,6 +122,28 @@ def test_header_agent_sends_its_repository_prompt_and_the_pinned_snapshot() -> N
         "input_image",
         "input_image",
     ]
+    assert parts[1]["detail"] == "high"
+
+
+def test_vision_agent_reads_simulated_photo_pages() -> None:
+    client = _Client()
+    reader = VisionSectionReader(client, load_approach_config(STRONG_VISION))  # type: ignore[arg-type]
+    pages = (b"\xff\xd8\xff\x00page-one", b"\xff\xd8\xff\x00page-two")
+
+    reader.read(
+        SectionRequest(section=Section.HEADER, document=b"not a pdf", pages=pages)
+    )
+
+    content = client.responses.kwargs["input"]
+    assert isinstance(content, list)
+    parts = content[0]["content"]
+    assert [part["type"] for part in parts] == [
+        "input_text",
+        "input_image",
+        "input_image",
+    ]
+    encoded = base64.b64encode(pages[0]).decode("ascii")
+    assert parts[1]["image_url"] == f"data:image/jpeg;base64,{encoded}"
     assert parts[1]["detail"] == "high"
 
 

@@ -15,7 +15,18 @@ import pytest
 from pypdf import PdfReader
 
 from nfe_document_extraction.domain import Extraction
-from nfe_document_extraction.synthetic import PlantedError, SyntheticDocument
+from nfe_document_extraction.evaluation.dataset import (
+    DIGITAL_PDF,
+    SIMULATED_PHOTO,
+    load_synthetic_pdfs,
+)
+from nfe_document_extraction.synthetic import (
+    SYNTHETIC_SEED,
+    PlantedError,
+    SyntheticDocument,
+    simulate_photo_pages,
+    write_synthetic_set,
+)
 from nfe_document_extraction.validation import ValidationReport, validate
 
 _NFE_NS = "{http://www.portalfiscal.inf.br/nfe}"
@@ -30,6 +41,72 @@ def synthetic_dir(tmp_path_factory: pytest.TempPathFactory) -> Path:
     return destination
 
 
+def test_fixed_seed_regenerates_identical_simulated_photos() -> None:
+    pdf = _multipage_pdf()
+
+    first = simulate_photo_pages(pdf, seed=SYNTHETIC_SEED)
+    second = simulate_photo_pages(pdf, seed=SYNTHETIC_SEED)
+
+    assert first == second
+    assert simulate_photo_pages(pdf, seed=SYNTHETIC_SEED + 1) != first
+    assert len(first) == _page_count(pdf)
+    assert _page_count(pdf) > 1
+    assert all(
+        page.startswith(b"\xff\xd8\xff") and len(page) > 10_000 for page in first
+    )
+
+
+def test_each_nfe_is_written_with_both_renditions_and_one_ground_truth(
+    tmp_path: Path,
+) -> None:
+    document = next(item for item in _load(_REPO_SET) if _page_count(item.pdf) > 1)
+    destination = tmp_path / "synthetic"
+    write_synthetic_set(destination, (document,))
+    folder = destination / document.nfe_id
+    renditions = json.loads((folder / "renditions.json").read_text(encoding="utf-8"))
+    pages = sorted((folder / "simulated-photo").glob("page-*.jpg"))
+
+    assert [entry["input_type"] for entry in renditions] == [
+        DIGITAL_PDF,
+        SIMULATED_PHOTO,
+    ]
+    assert len(pages) == _page_count(document.pdf)
+    assert (folder / "danfe.pdf").read_bytes() == document.pdf
+    assert json.loads((folder / "ground_truth.json").read_text(encoding="utf-8")) == (
+        document.ground_truth.model_dump(mode="json")
+    )
+    assert [path.name for path in folder.rglob("ground_truth.json")] == [
+        "ground_truth.json"
+    ]
+    assert "input_type" not in json.loads(
+        (folder / "metadata.json").read_text(encoding="utf-8")
+    )
+
+    again = tmp_path / "again"
+    write_synthetic_set(again, (document,))
+    assert _tree(again) == _tree(destination)
+
+
+def test_dataset_examples_are_one_per_rendition_and_share_ground_truth(
+    tmp_path: Path,
+) -> None:
+    document = next(item for item in _load(_REPO_SET) if _page_count(item.pdf) > 1)
+    destination = tmp_path / "synthetic"
+    write_synthetic_set(destination, (document,))
+
+    pdf_example, photo_example = load_synthetic_pdfs(destination)
+
+    assert pdf_example.input_type == DIGITAL_PDF
+    assert photo_example.input_type == SIMULATED_PHOTO
+    assert pdf_example.nfe_id == photo_example.nfe_id == document.nfe_id
+    assert pdf_example.origin == photo_example.origin == document.origin
+    assert pdf_example.ground_truth == photo_example.ground_truth
+    assert pdf_example.planted_rule == photo_example.planted_rule
+    assert pdf_example.pdf.startswith(b"%PDF")
+    assert len(photo_example.pages) == _page_count(document.pdf)
+    assert all(page.startswith(b"\xff\xd8\xff") for page in photo_example.pages)
+
+
 def test_fixed_seed_regenerates_a_byte_identical_set(
     synthetic_dir: Path,
     tmp_path: Path,
@@ -41,7 +118,17 @@ def test_fixed_seed_regenerates_a_byte_identical_set(
 
 
 def test_repository_set_matches_the_fixed_seed(synthetic_dir: Path) -> None:
-    assert _tree(synthetic_dir) == _tree(_REPO_SET)
+    # pdfium's raster is not byte-stable across operating systems, so committed
+    # Simulated photos are checked by path. Byte identity is the same-process test.
+    assert _tree(synthetic_dir, include_photos=False) == _tree(
+        _REPO_SET, include_photos=False
+    )
+    assert _photo_paths(synthetic_dir) == _photo_paths(_REPO_SET)
+    assert _photo_paths(_REPO_SET)
+    for relative in _photo_paths(_REPO_SET):
+        payload = (_REPO_SET / relative).read_bytes()
+        assert payload.startswith(b"\xff\xd8\xff")
+        assert len(payload) > 10_000
     metadata = json.loads(
         (synthetic_dir / "synthetic-001" / "metadata.json").read_text(encoding="utf-8")
     )
@@ -149,6 +236,14 @@ def _failure_messages(nfe_id: str, report: ValidationReport) -> str:
     return f"{nfe_id}: {messages}"
 
 
+def _multipage_pdf() -> bytes:
+    for folder in sorted(path for path in _REPO_SET.iterdir() if path.is_dir()):
+        pdf = (folder / "danfe.pdf").read_bytes()
+        if _page_count(pdf) > 1:
+            return pdf
+    raise AssertionError("synthetic set has no multi-page DANFE")
+
+
 def _page_count(pdf: bytes) -> int:
     return len(PdfReader(io.BytesIO(pdf)).pages)
 
@@ -170,9 +265,15 @@ def _brazilian(value: Decimal, precision: int) -> str:
     return sign + ".".join(reversed(groups)) + "," + fraction
 
 
-def _tree(root: Path) -> dict[str, bytes]:
+def _photo_paths(root: Path) -> tuple[str, ...]:
+    return tuple(
+        path.relative_to(root).as_posix() for path in sorted(root.rglob("*.jpg"))
+    )
+
+
+def _tree(root: Path, *, include_photos: bool = True) -> dict[str, bytes]:
     return {
         path.relative_to(root).as_posix(): path.read_bytes()
         for path in sorted(root.rglob("*"))
-        if path.is_file()
+        if path.is_file() and (include_photos or path.suffix != ".jpg")
     }

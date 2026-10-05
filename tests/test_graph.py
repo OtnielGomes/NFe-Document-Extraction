@@ -78,6 +78,25 @@ def test_a_valid_reading_is_accepted_without_repair() -> None:
     assert all(request.document == _PDF for request in reader.requests)
 
 
+def test_simulated_photo_pages_reach_the_first_read_and_the_repair() -> None:
+    pages = (b"\xff\xd8\xffpage-one", b"\xff\xd8\xffpage-two")
+    invoice = _extraction()
+    broken = _extraction(issuer_cnpj="00000000000181")
+    reader = _reader(
+        {
+            Section.HEADER: [_header(broken.header), _header(invoice.header)],
+            Section.LINE_ITEMS: [_items(invoice.line_items)],
+        }
+    )
+
+    run = run_document(reader, b"", pages=pages, today=_TODAY)
+
+    assert run.outcome is DocumentOutcome.ACCEPTED
+    assert len(reader.requests) == 3
+    assert all(request.pages == pages for request in reader.requests)
+    assert any(request.notes for request in reader.requests)
+
+
 def test_a_header_failure_is_repaired_only_by_the_header_agent() -> None:
     invoice = _extraction()
     broken = _extraction(issuer_cnpj="00000000000181")

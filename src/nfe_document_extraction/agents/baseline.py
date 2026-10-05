@@ -47,13 +47,16 @@ def extract_baseline(
     pdf: bytes,
     *,
     config: ApproachConfig | None = None,
+    pages: tuple[bytes, ...] = (),
 ) -> BaselineReading:
-    """Read a digital DANFE with one structured vision call.
+    """Read a DANFE with one structured vision call.
 
-    A parse failure or a refusal is an extraction error. It does not raise.
+    ``pages`` are the Simulated photo JPEGs. A digital PDF is rasterized when
+    ``pages`` is empty. A parse failure or a refusal is an extraction error.
+    It does not raise.
     """
     resolved = load_baseline_config() if config is None else config
-    images = render_pdf_pages(pdf)
+    images = pages or render_pdf_pages(pdf)
     if not images:
         return _failed(ExtractionFailure.PARSE_FAILURE, latency_seconds=0.0)
     started = time.perf_counter()

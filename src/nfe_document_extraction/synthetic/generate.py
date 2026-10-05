@@ -27,6 +27,7 @@ from nfe_document_extraction.domain import (
     LineItem,
     UnsupportedComponents,
 )
+from nfe_document_extraction.synthetic.photos import simulate_photo_pages
 from nfe_document_extraction.validation.identifiers import (
     access_key_check_digit,
     cnpj_check_digits,
@@ -46,6 +47,11 @@ from nfe_document_extraction.validation.validate import (
 
 SYNTHETIC_SEED = 5
 SYNTHETIC_COUNT = 100
+_SIMULATED_PHOTO_DIRECTORY = "simulated-photo"
+_RENDITIONS = (
+    {"input_type": "digital PDF"},
+    {"input_type": "simulated photo"},
+)
 _CPF_RECIPIENTS = 20
 _ICMS_ST_DOCUMENTS = 30
 _MULTIPAGE_DOCUMENTS = 20
@@ -194,8 +200,14 @@ def generate_synthetic_set(
 def write_synthetic_set(
     destination: Path,
     documents: Sequence[SyntheticDocument],
+    *,
+    seed: int = SYNTHETIC_SEED,
 ) -> None:
-    """Write XML, DANFE PDF, ground truth, and metadata for each document."""
+    """Write XML, DANFE PDF, ground truth, metadata, and Simulated photos.
+
+    Both Renditions of an NF-e share one ground-truth file. ``renditions.json``
+    lists one dataset example per Rendition, each with ``input_type``.
+    """
     if destination.exists():
         shutil.rmtree(destination)
     destination.mkdir(parents=True)
@@ -209,6 +221,8 @@ def write_synthetic_set(
             _json_bytes(document.ground_truth.model_dump(mode="json")),
         )
         _write(folder / "metadata.json", _json_bytes(_metadata(document)))
+        _write_simulated_photo(folder, document, seed)
+        _write(folder / "renditions.json", _json_bytes(_RENDITIONS))
 
 
 def _document(
@@ -658,6 +672,21 @@ def _json_bytes(payload: object) -> bytes:
 
 def _write(path: Path, payload: bytes) -> None:
     path.write_bytes(payload)
+
+
+def _write_simulated_photo(
+    folder: Path, document: SyntheticDocument, seed: int
+) -> None:
+    photo_dir = folder / _SIMULATED_PHOTO_DIRECTORY
+    photo_dir.mkdir()
+    photo_seed = random.Random(f"simulated-photo:{seed}:{document.nfe_id}").randrange(
+        2**32
+    )
+    for index, page in enumerate(
+        simulate_photo_pages(document.pdf, seed=photo_seed),
+        start=1,
+    ):
+        _write(photo_dir / f"page-{index:03d}.jpg", page)
 
 
 def _metadata(document: SyntheticDocument) -> dict[str, object]:

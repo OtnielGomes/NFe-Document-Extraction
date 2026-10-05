@@ -65,7 +65,10 @@ def main(argv: list[str] | None = None) -> int:
         "--limit",
         type=int,
         default=None,
-        help="Evaluate only the first N documents.",
+        help=(
+            "Evaluate only the first N dataset examples. "
+            "Examples are ordered by NF-e, digital PDF then simulated photo."
+        ),
     )
     args = parser.parse_args(argv)
     if args.limit is not None and args.limit < 1:
@@ -126,7 +129,12 @@ def _baseline(
     total = len(documents)
     for index, document in enumerate(documents, start=1):
         print(f"{config.approach}: {document.nfe_id} ({index}/{total})", flush=True)
-        reading = extract_baseline(client, document.pdf, config=config)
+        reading = extract_baseline(
+            client,
+            document.pdf,
+            config=config,
+            pages=document.pages,
+        )
         evaluations.append(
             judge_reading(
                 approach=config.approach,
@@ -190,7 +198,12 @@ def _section_agents(
     total = len(selected)
     for index, document in enumerate(selected, start=1):
         print(f"{config.approach}: {document.nfe_id} ({index}/{total})", flush=True)
-        run = run_document(reader, document.pdf, graph=graph)
+        run = run_document(
+            reader,
+            document.pdf,
+            graph=graph,
+            pages=document.pages,
+        )
         initial_rules = None if run.initial_report is None else run.initial_report.rules
         evaluations.append(
             judge_reading(

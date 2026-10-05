@@ -61,6 +61,7 @@ class SectionRequest:
     section: Section
     document: bytes
     notes: tuple[RepairFieldNote, ...] = ()
+    pages: tuple[bytes, ...] = ()
 
 
 @dataclass(frozen=True)
@@ -90,8 +91,11 @@ class VisionSectionReader:
         self._config = config
 
     def read(self, request: SectionRequest) -> SectionReading:
-        """Read one section. A parse failure or a refusal is an extraction error."""
-        images = render_pdf_pages(request.document)
+        """Read one section. A parse failure or a refusal is an extraction error.
+
+        Simulated photos pass their page images. A digital PDF is rasterized.
+        """
+        images = request.pages or render_pdf_pages(request.document)
         if not images:
             return SectionReading(
                 section=request.section,

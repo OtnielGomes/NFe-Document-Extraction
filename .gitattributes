@@ -1,3 +1,4 @@
 data/synthetic/**/*.pdf binary
+data/synthetic/**/*.jpg binary
 data/synthetic/**/*.xml text eol=lf
 data/synthetic/**/*.json text eol=lf
