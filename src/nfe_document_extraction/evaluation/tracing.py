@@ -2,7 +2,8 @@
 
 Once tracing is disabled, this process does not send data to LangSmith.
 ``tracing_is_disabled`` stays true only while that choice is still visible in
-the environment, so a caller can refuse to start when it cannot confirm it.
+the environment and the LangSmith SDK reports tracing off, so a caller can
+refuse to start when it cannot confirm it.
 """
 
 from __future__ import annotations
@@ -26,15 +27,17 @@ def disable_tracing() -> None:
     _forced_off.set(True)
     os.environ["LANGSMITH_TRACING"] = "false"
     os.environ["LANGCHAIN_TRACING_V2"] = "false"
+    _forget_cached_tracing_flag()
 
 
 def tracing_is_disabled() -> bool:
-    """True when tracing was disabled and the environment still says so."""
-    return (
+    """True when tracing was disabled and LangSmith still agrees it is off."""
+    env_off = (
         _forced_off.get()
         and os.environ.get("LANGSMITH_TRACING") == "false"
         and os.environ.get("LANGCHAIN_TRACING_V2") == "false"
     )
+    return env_off and _sdk_tracing_is_enabled() is False
 
 
 def send_to_langsmith(send: Callable[[], None]) -> None:
@@ -76,4 +79,19 @@ def resolve_tracing(*, trace: bool, no_trace: bool) -> TracingChoice:
     trace_models = trace or (env is not None and env.strip().lower() in _ON)
     if trace_models:
         os.environ["LANGSMITH_TRACING"] = "true"
+        os.environ["LANGCHAIN_TRACING_V2"] = "true"
+        _forget_cached_tracing_flag()
     return TracingChoice(upload=True, trace_models=trace_models)
+
+
+def _forget_cached_tracing_flag() -> None:
+    """Drop LangSmith's cached env read so a later check sees this run's choice."""
+    from langsmith.utils import get_env_var
+
+    get_env_var.cache_clear()
+
+
+def _sdk_tracing_is_enabled() -> bool | str:
+    from langsmith.utils import tracing_is_enabled
+
+    return tracing_is_enabled()

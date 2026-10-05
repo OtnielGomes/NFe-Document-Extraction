@@ -9,9 +9,13 @@ from nfe_document_extraction.evaluation import tracing
 
 @pytest.fixture(autouse=True)
 def _isolate_langsmith(monkeypatch: pytest.MonkeyPatch) -> Iterator[None]:
+    from langsmith.utils import get_env_var
+
+    get_env_var.cache_clear()
     monkeypatch.delenv("LANGSMITH_API_KEY", raising=False)
     monkeypatch.delenv("LANGSMITH_TRACING", raising=False)
     monkeypatch.delenv("LANGCHAIN_TRACING_V2", raising=False)
     token = tracing._forced_off.set(False)
     yield
+    get_env_var.cache_clear()
     tracing._forced_off.reset(token)

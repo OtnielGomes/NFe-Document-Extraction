@@ -12,6 +12,37 @@ from nfe_document_extraction.evaluation.tracing import (
 )
 
 
+def test_disabling_tracing_turns_the_sdk_off_after_it_already_read_the_env(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setenv("LANGSMITH_TRACING", "true")
+    monkeypatch.setenv("LANGCHAIN_TRACING_V2", "true")
+    from langsmith import Client
+    from langsmith.utils import tracing_is_enabled
+
+    assert Client.__module__.startswith("langsmith")
+    assert tracing_is_enabled() is True
+
+    disable_tracing()
+
+    assert tracing_is_enabled() is False
+    assert tracing_is_disabled()
+
+
+def test_trace_flag_turns_the_sdk_on_after_it_already_read_tracing_as_off(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setenv("LANGSMITH_API_KEY", "test-key")
+    from langsmith.utils import tracing_is_enabled
+
+    assert tracing_is_enabled() is False
+
+    choice = resolve_tracing(trace=True, no_trace=False)
+
+    assert choice.trace_models is True
+    assert tracing_is_enabled() is True
+
+
 def test_disabling_tracing_sends_nothing_and_can_be_confirmed(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
