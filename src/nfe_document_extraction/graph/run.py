@@ -179,7 +179,9 @@ def submit_human_review(
     compiled = compile_document_graph(reader, today=today, checkpointer=checkpointer)
     started = time.perf_counter()
     state = compiled.invoke(
-        Command(resume=dict(edits)),
+        # LangGraph reads an empty dict as an interrupt-id map, so the
+        # field map travels under "edits" even when the person changes nothing.
+        Command(resume={"edits": dict(edits)}),
         _thread_config(thread_id),
     )
     elapsed = time.perf_counter() - started
@@ -436,17 +438,17 @@ def _route_repair(state: DocumentState) -> dict[str, object]:
 
 def _human_review(state: DocumentState) -> dict[str, object]:
     report = state.get("report")
-    if not isinstance(report, ValidationReport):
-        return {"pending_edits": {}}
-    flagged = _flagged(report)
-    if not flagged:
-        return {"pending_edits": {}}
-    edits = interrupt(
+    flagged = _flagged(report) if isinstance(report, ValidationReport) else ()
+    messages = (
+        list(report.review_messages) if isinstance(report, ValidationReport) else []
+    )
+    payload = interrupt(
         {
             "flagged_fields": list(flagged),
-            "review_messages": list(report.review_messages),
+            "review_messages": messages,
         }
     )
+    edits = payload.get("edits") if isinstance(payload, dict) else None
     if not isinstance(edits, dict):
         raise TypeError("Human review edits must map field paths to values.")
     rejected = tuple(field for field in edits if field not in flagged)

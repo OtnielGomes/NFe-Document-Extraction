@@ -515,6 +515,60 @@ def test_fixing_a_flagged_field_does_not_accept_an_unsupported_document() -> Non
     assert len(reader.requests) == calls_before_review
 
 
+def test_an_unsupported_document_with_nothing_flagged_still_pauses() -> None:
+    reviewed = _extraction(
+        unsupported_components={
+            "import_tax": True,
+            "returned_ipi": False,
+            "icms_relief": False,
+            "fcp_st": False,
+        },
+    )
+    reader = _reader(_queues(reviewed))
+    checkpointer = InMemorySaver()
+    thread_id = "review-unsupported-only"
+    paused = run_document(
+        reader,
+        _PDF,
+        today=_TODAY,
+        checkpointer=checkpointer,
+        thread_id=thread_id,
+    )
+    calls_before_review = len(reader.requests)
+
+    assert paused.thread_id == thread_id
+    assert paused.awaiting_human_review is True
+    assert paused.outcome is DocumentOutcome.HUMAN_REVIEW
+    assert paused.flagged_fields == ()
+    assert paused.repair_attempted is False
+    assert paused.report is not None
+    assert any("import tax" in message for message in paused.report.review_messages)
+
+    with pytest.raises(NonFlaggedFieldEdit) as raised:
+        submit_human_review(
+            reader,
+            thread_id,
+            {"header.number": "999"},
+            checkpointer=checkpointer,
+            today=_TODAY,
+        )
+    assert raised.value.fields == ("header.number",)
+
+    finished = submit_human_review(
+        reader,
+        thread_id,
+        {},
+        checkpointer=checkpointer,
+        today=_TODAY,
+    )
+
+    assert finished.outcome is DocumentOutcome.HUMAN_REVIEW
+    assert finished.awaiting_human_review is False
+    assert finished.human_fields == ()
+    assert finished.thread_id == thread_id
+    assert len(reader.requests) == calls_before_review
+
+
 def test_a_valid_line_item_edit_is_accepted_without_another_model_call() -> None:
     invoice = _extraction()
     broken = _extraction(
