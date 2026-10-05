@@ -6,6 +6,7 @@ import io
 import json
 import os
 import threading
+import time
 from collections.abc import Callable, Mapping
 from datetime import date
 from decimal import Decimal
@@ -15,18 +16,21 @@ from fastapi.testclient import TestClient
 from pypdf import PdfWriter
 from test_identifier_rules import ISSUER_CNPJ, _extraction
 
+from nfe_document_extraction.agents.config import CHEAP_VISION, load_approach_config
 from nfe_document_extraction.agents.sections import (
     Section,
     SectionReading,
     SectionRequest,
 )
 from nfe_document_extraction.app.api import create_app
+from nfe_document_extraction.app.errors import RequestRejected
 from nfe_document_extraction.app.limits import CostLimits
 from nfe_document_extraction.app.monitoring import (
     ExtractTrace,
     LangSmithMonitor,
     build_langsmith_client,
 )
+from nfe_document_extraction.app.service import ExtractionService
 from nfe_document_extraction.domain import Extraction
 
 _TODAY = date(2026, 10, 5)
@@ -574,12 +578,86 @@ def test_the_public_demo_caps() -> None:
     assert limits.daily_spend_cap_usd == Decimal("0.50")
 
 
+def test_overlapping_uploads_cannot_both_pass_the_spend_cap() -> None:
+    reader = _BlockingReader()
+    service = ExtractionService(
+        reader,
+        monitor=RecordingMonitor(),
+        limits=CostLimits(),
+        clock=lambda: _TODAY,
+        price=load_approach_config(CHEAP_VISION),
+    )
+    pdf = _pdf(1)
+    results: list[object] = []
+
+    def run() -> None:
+        try:
+            results.append(
+                service.extract(
+                    pdf,
+                    filename="invoice.pdf",
+                    content_type="application/pdf",
+                    client_ip="198.51.100.70",
+                )
+            )
+        except RequestRejected as exc:
+            results.append(exc.status_code)
+
+    first = threading.Thread(target=run)
+    second = threading.Thread(target=run)
+    first.start()
+    assert reader.started.wait(timeout=5)
+    second.start()
+    deadline = time.monotonic() + 1
+    while time.monotonic() < deadline and reader.header_calls < 2:
+        time.sleep(0.01)
+    reader.release.set()
+    first.join(timeout=5)
+    second.join(timeout=5)
+
+    assert not first.is_alive()
+    assert not second.is_alive()
+    assert reader.header_calls == 1
+    assert 429 in results
+    assert any(isinstance(item, dict) for item in results)
+
+
 class _Clock:
     def __init__(self, day: date) -> None:
         self.day = day
 
     def __call__(self) -> date:
         return self.day
+
+
+class _BlockingReader:
+    """Holds the first header read until the test releases it."""
+
+    def __init__(self) -> None:
+        self._invoice = _extraction()
+        self.started = threading.Event()
+        self.release = threading.Event()
+        self.header_calls = 0
+        self._lock = threading.Lock()
+
+    def read(self, request: SectionRequest) -> SectionReading:
+        if request.section is Section.HEADER:
+            with self._lock:
+                self.header_calls += 1
+                call = self.header_calls
+            if call == 1:
+                self.started.set()
+                if not self.release.wait(timeout=5):
+                    raise TimeoutError("the first read was not released")
+            return SectionReading(
+                section=Section.HEADER,
+                header=self._invoice.header,
+                output_tokens=_OVER_CAP_OUTPUT_TOKENS,
+            )
+        return SectionReading(
+            section=Section.LINE_ITEMS,
+            line_items=self._invoice.line_items,
+        )
 
 
 def _client(

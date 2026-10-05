@@ -6,7 +6,6 @@ from collections.abc import Callable, Mapping
 from datetime import date
 from typing import Any
 
-from langgraph.checkpoint.base import BaseCheckpointSaver
 from langgraph.checkpoint.memory import InMemorySaver
 from pydantic import ValidationError
 
@@ -45,14 +44,13 @@ class ExtractionService:
         limits: CostLimits,
         clock: Callable[[], date],
         price: TokenPrice,
-        checkpointer: BaseCheckpointSaver[Any] | None = None,
     ) -> None:
         self.limits = limits
         self._reader = reader
         self._monitor = monitor
         self._clock = clock
         self._price = price
-        self._checkpointer = InMemorySaver() if checkpointer is None else checkpointer
+        self._checkpointer = InMemorySaver()
         self._ledger = UsageLedger(limits, clock)
         self._trace_ids: dict[str, str] = {}
 
@@ -71,21 +69,21 @@ class ExtractionService:
             content_type=content_type,
             limits=self.limits,
         )
-        self._ledger.admit(client_ip)
-        run = run_document(
-            self._reader,
-            prepared.pdf,
-            pages=prepared.pages,
-            today=self._clock(),
-            checkpointer=self._checkpointer,
-        )
-        cost = token_cost_usd(
-            run.input_tokens,
-            run.cached_input_tokens,
-            run.output_tokens,
-            self._price,
-        )
-        self._ledger.add_spend(cost)
+        with self._ledger.admission(client_ip) as admission:
+            run = run_document(
+                self._reader,
+                prepared.pdf,
+                pages=prepared.pages,
+                today=self._clock(),
+                checkpointer=self._checkpointer,
+            )
+            cost = token_cost_usd(
+                run.input_tokens,
+                run.cached_input_tokens,
+                run.output_tokens,
+                self._price,
+            )
+            admission.add_spend(cost)
         trace = extraction_trace(run, cost)
         self._monitor.record_extraction(trace)
         if run.thread_id is not None and run.awaiting_human_review:
@@ -106,6 +104,9 @@ class ExtractionService:
             raise RequestRejected(NO_REVIEW, 404)
         flagged = _flagged_paths(snapshot)
         applicable = {path: value for path, value in edits.items() if path in flagged}
+        # A value the schema rejects must not reach the checkpoint: the graph
+        # would keep that edit and refuse later resumes. The graph applies
+        # the same edits again after this check.
         try:
             apply_extraction_edits(extraction, applicable)
         except (ValidationError, ValueError) as exc:

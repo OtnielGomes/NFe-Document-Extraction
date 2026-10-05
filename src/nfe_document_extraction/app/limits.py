@@ -9,7 +9,8 @@ which token usage was not recorded.
 from __future__ import annotations
 
 import threading
-from collections.abc import Callable
+from collections.abc import Callable, Iterator
+from contextlib import contextmanager
 from dataclasses import dataclass
 from datetime import date
 from decimal import Decimal
@@ -42,7 +43,11 @@ class CostLimits:
 
 
 class UsageLedger:
-    """Daily upload counts and estimated spend. Safe for concurrent requests."""
+    """Daily upload counts and estimated spend.
+
+    An admission holds the lock until the caller records that upload's
+    cost, so a second request cannot pass the spend brake first.
+    """
 
     def __init__(self, limits: CostLimits, clock: Callable[[], date]) -> None:
         self.limits = limits
@@ -53,7 +58,8 @@ class UsageLedger:
         self._global = 0
         self._spend = Decimal(0)
 
-    def admit(self, client_ip: str) -> None:
+    @contextmanager
+    def admission(self, client_ip: str) -> Iterator[_Admission]:
         """Reserve one upload, or reject when a daily brake is already shut."""
         with self._lock:
             self._roll_forward()
@@ -75,12 +81,7 @@ class UsageLedger:
                 )
             self._per_ip[client_ip] = per_ip + 1
             self._global += 1
-
-    def add_spend(self, amount: Decimal) -> None:
-        """Add the estimated cost of a model call that already ran."""
-        with self._lock:
-            self._roll_forward()
-            self._spend += amount
+            yield _Admission(self)
 
     def _roll_forward(self) -> None:
         today = self._clock()
@@ -90,3 +91,13 @@ class UsageLedger:
         self._per_ip = {}
         self._global = 0
         self._spend = Decimal(0)
+
+
+class _Admission:
+    """The open reservation. Spend is added before the lock is released."""
+
+    def __init__(self, ledger: UsageLedger) -> None:
+        self._ledger = ledger
+
+    def add_spend(self, amount: Decimal) -> None:
+        self._ledger._spend += amount
