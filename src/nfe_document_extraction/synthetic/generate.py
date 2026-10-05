@@ -27,6 +27,7 @@ from nfe_document_extraction.domain import (
     LineItem,
     UnsupportedComponents,
 )
+from nfe_document_extraction.domain.normalization import printed_decimal
 from nfe_document_extraction.synthetic.photos import simulate_photo_pages
 from nfe_document_extraction.validation.identifiers import (
     access_key_check_digit,
@@ -342,12 +343,12 @@ def _item(
 ) -> _ItemDraft:
     sku, short_name, ncm = _PRODUCTS[(printed_order - 1) % len(_PRODUCTS)]
     quantity_text = f"{Decimal(rng.randrange(1, 200_000)) / Decimal(10000):.4f}"
-    quantity = _displayed(quantity_text, _QUANTITY_PRECISION)
+    quantity = printed_decimal(quantity_text, _QUANTITY_PRECISION)
     unit_price = (Decimal(rng.randrange(5_000, 2_500_000)) / Decimal(10000)).quantize(
         Decimal("0.0001")
     )
     unit_price_xml = _unit_price_xml(unit_price)
-    unit_price = _displayed(unit_price_xml, _PRICE_PRECISION)
+    unit_price = printed_decimal(unit_price_xml, _PRICE_PRECISION)
     item_total = _cents(quantity * unit_price)
     return _ItemDraft(
         printed_order=printed_order,
@@ -637,16 +638,11 @@ def _unit_price_xml(printed: Decimal) -> str:
     for shift in (Decimal("1e-8"), Decimal("1e-9"), Decimal("-1e-8")):
         candidate = f"{printed + shift:.10f}"
         if (
-            _displayed(candidate, _PRICE_PRECISION) == printed
+            printed_decimal(candidate, _PRICE_PRECISION) == printed
             and Decimal(candidate) != printed
         ):
             return candidate
     raise RuntimeError(f"no XML unit price prints as {printed}")
-
-
-def _displayed(xml_text: str, precision: int) -> Decimal:
-    """Value BrazilFiscalReport prints, which formats through float."""
-    return Decimal(format(float(xml_text), f".{precision}f"))
 
 
 def _cents(amount: Decimal) -> int:

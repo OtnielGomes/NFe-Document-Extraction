@@ -9,7 +9,7 @@ from __future__ import annotations
 import argparse
 import os
 import sys
-from collections.abc import Sequence
+from collections.abc import Callable, Sequence
 from pathlib import Path
 
 from langsmith import Client
@@ -60,6 +60,7 @@ from nfe_document_extraction.validation import DocumentOutcome
 _ROOT = Path(__file__).resolve().parent.parent
 _SECTION_APPROACHES = (CHEAP_VISION, STRONG_VISION, TEXT_LAYER)
 _PHOTO_ROWS = (SIMULATED_PHOTO, PHONE_PHOTO)
+Progress = Callable[[str, str, int, int], None]
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -127,7 +128,7 @@ def main(argv: list[str] | None = None) -> int:
     scored = collect_evaluations(documents, client, configs)
     text = render_results(
         _result_rows(tuple(evaluation for evaluation, _ in scored), documents),
-        model_snapshot=_snapshot_label(configs),
+        model_snapshot=snapshot_label(configs),
         pricing_as_of=configs[0].pricing_as_of.isoformat(),
     )
     args.output.parent.mkdir(parents=True, exist_ok=True)
@@ -169,25 +170,33 @@ def collect_evaluations(
     documents: Sequence[DatasetExample],
     client: OpenAI,
     configs: Sequence[ApproachConfig],
+    *,
+    announce: Progress | None = None,
 ) -> tuple[tuple[InvoiceEvaluation, ScoredReading], ...]:
     """Score the baseline, both vision approaches, and the text-layer approach."""
+    reporter = _announce_document if announce is None else announce
     baseline, *section_configs = configs
     scored: list[tuple[InvoiceEvaluation, ScoredReading]] = []
-    scored.extend(_baseline(documents, client, baseline))
+    scored.extend(_baseline(documents, client, baseline, reporter))
     for config in section_configs:
-        scored.extend(_section_agents(documents, client, config))
+        scored.extend(_section_agents(documents, client, config, reporter))
     return tuple(scored)
+
+
+def _announce_document(approach: str, nfe_id: str, index: int, total: int) -> None:
+    print(f"{approach}: {nfe_id} ({index}/{total})", flush=True)
 
 
 def _baseline(
     documents: Sequence[DatasetExample],
     client: OpenAI,
     config: ApproachConfig,
+    announce: Progress,
 ) -> list[tuple[InvoiceEvaluation, ScoredReading]]:
     scored: list[tuple[InvoiceEvaluation, ScoredReading]] = []
     total = len(documents)
     for index, document in enumerate(documents, start=1):
-        print(f"{config.approach}: {document.nfe_id} ({index}/{total})", flush=True)
+        announce(config.approach, document.nfe_id, index, total)
         reading = extract_baseline(
             client,
             document.pdf,
@@ -255,6 +264,7 @@ def _section_agents(
     documents: Sequence[DatasetExample],
     client: OpenAI,
     config: ApproachConfig,
+    announce: Progress,
 ) -> list[tuple[InvoiceEvaluation, ScoredReading]]:
     reader = _section_reader(client, config)
     selected = _documents_for_approach(config, documents)
@@ -262,7 +272,7 @@ def _section_agents(
     scored: list[tuple[InvoiceEvaluation, ScoredReading]] = []
     total = len(selected)
     for index, document in enumerate(selected, start=1):
-        print(f"{config.approach}: {document.nfe_id} ({index}/{total})", flush=True)
+        announce(config.approach, document.nfe_id, index, total)
         run = run_document(
             reader,
             document.pdf,
@@ -319,7 +329,7 @@ def _scored(
     )
 
 
-def _snapshot_label(configs: Sequence[ApproachConfig]) -> str:
+def snapshot_label(configs: Sequence[ApproachConfig]) -> str:
     grouped: dict[str, list[str]] = {}
     for config in configs:
         grouped.setdefault(config.model, []).append(config.approach)

@@ -52,6 +52,11 @@ def normalize_money(value: object) -> int:
     raise ValueError("money must be integer cents or a reais amount")
 
 
+def printed_decimal(xml_text: str, precision: int) -> Decimal:
+    """Value BrazilFiscalReport prints, which formats through float."""
+    return Decimal(format(float(xml_text), f".{precision}f"))
+
+
 def normalize_decimal(value: object) -> Decimal:
     if isinstance(value, Decimal):
         return value
