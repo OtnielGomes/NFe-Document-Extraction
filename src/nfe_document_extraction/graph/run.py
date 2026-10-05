@@ -1,14 +1,20 @@
-"""LangGraph fan-out to the section agents, then one repair."""
+"""LangGraph fan-out to the section agents, one repair, then human review."""
 
 from __future__ import annotations
 
+import re
 import time
+import uuid
 from collections.abc import Mapping
 from dataclasses import dataclass
 from datetime import date
-from typing import Protocol, TypedDict, cast
+from typing import Any, Protocol, TypedDict, cast
 
+from langgraph.checkpoint.base import BaseCheckpointSaver
+from langgraph.checkpoint.memory import InMemorySaver
+from langgraph.checkpoint.serde.jsonplus import JsonPlusSerializer
 from langgraph.graph import END, START, StateGraph
+from langgraph.types import Command, interrupt
 
 from nfe_document_extraction.agents.sections import (
     RepairFieldNote,
@@ -37,10 +43,42 @@ class TokenUsage:
 
 
 class _CompiledGraph(Protocol):
-    def invoke(self, state: Mapping[str, object]) -> Mapping[str, object]: ...
+    def invoke(
+        self,
+        state: Mapping[str, object] | Command,
+        config: Mapping[str, object] | None = None,
+    ) -> Mapping[str, object]: ...
 
     @property
     def nodes(self) -> Mapping[str, object]: ...
+
+
+_CHECKPOINT_TYPES: tuple[tuple[str, str], ...] = (
+    ("nfe_document_extraction.domain.extraction", "Extraction"),
+    ("nfe_document_extraction.domain.extraction", "Header"),
+    ("nfe_document_extraction.domain.extraction", "LineItem"),
+    ("nfe_document_extraction.domain.extraction", "UnsupportedComponents"),
+    ("nfe_document_extraction.validation.report", "DocumentOutcome"),
+    ("nfe_document_extraction.validation.report", "FieldReport"),
+    ("nfe_document_extraction.validation.report", "FieldStatus"),
+    ("nfe_document_extraction.validation.report", "RuleFailure"),
+    ("nfe_document_extraction.validation.report", "RuleReport"),
+    ("nfe_document_extraction.validation.report", "ValidationReport"),
+    ("nfe_document_extraction.graph.run", "TokenUsage"),
+    ("nfe_document_extraction.agents.sections", "RepairFieldNote"),
+    ("nfe_document_extraction.evaluation.metrics", "ExtractionFailure"),
+)
+_HEADER_FIELD = re.compile(r"^header\.([a-z0-9_]+)$")
+_ITEM_FIELD = re.compile(r"^line_items\[(\d+)\]\.([a-z0-9_]+)$")
+
+
+class NonFlaggedFieldEdit(Exception):
+    """A human review submission named a field that is not flagged."""
+
+    def __init__(self, fields: tuple[str, ...]) -> None:
+        self.fields = fields
+        listed = ", ".join(fields)
+        super().__init__(f"Only flagged fields can be edited: {listed}.")
 
 
 class DocumentState(TypedDict, total=False):
@@ -63,11 +101,14 @@ class DocumentState(TypedDict, total=False):
     repair_attempted: bool
     header_notes: tuple[RepairFieldNote, ...]
     line_item_notes: tuple[RepairFieldNote, ...]
+    pending_edits: dict[str, object]
+    rejected_fields: tuple[str, ...]
+    human_fields: tuple[str, ...]
 
 
 @dataclass(frozen=True)
 class GraphRun:
-    """The document after at most one repair."""
+    """The document after at most one repair, including human review."""
 
     outcome: DocumentOutcome | None
     extraction: Extraction | None
@@ -80,6 +121,9 @@ class GraphRun:
     cached_input_tokens: int
     output_tokens: int
     latency_seconds: float
+    thread_id: str | None = None
+    awaiting_human_review: bool = False
+    human_fields: tuple[str, ...] = ()
 
 
 def run_document(
@@ -89,27 +133,69 @@ def run_document(
     today: date | None = None,
     graph: _CompiledGraph | None = None,
     pages: tuple[bytes, ...] = (),
+    checkpointer: BaseCheckpointSaver[Any] | None = None,
+    thread_id: str | None = None,
 ) -> GraphRun:
     """Read a DANFE with the Header and Line items agents.
 
     Both agents see the whole document. ``pages`` are Simulated photo images;
     a digital PDF leaves ``pages`` empty and is rasterized by the vision reader.
     Routing is code: a failing document is sent once to the agents that own
-    the flagged fields, and a document that still fails is ready for human
-    review. ``graph`` is a compiled graph from :func:`compile_document_graph`
-    for the same reader.
+    the flagged fields. If it still fails, the graph pauses for human review.
+    The paused checkpoint is identified by ``thread_id``. Pass the same
+    checkpointer to :func:`submit_human_review` to resume it. When ``graph``
+    is supplied it must already be compiled with a checkpointer; otherwise
+    ``checkpointer`` is attached here (an in-memory saver if omitted).
     """
-    compiled = compile_document_graph(reader, today=today) if graph is None else graph
+    thread = thread_id if thread_id is not None else str(uuid.uuid4())
+    compiled = (
+        compile_document_graph(reader, today=today, checkpointer=checkpointer)
+        if graph is None
+        else graph
+    )
     started = time.perf_counter()
-    state = compiled.invoke({"pdf": pdf, "pages": pages})
+    state = compiled.invoke(
+        {"pdf": pdf, "pages": pages},
+        _thread_config(thread),
+    )
     elapsed = time.perf_counter() - started
-    return _graph_run(state, elapsed)
+    return _graph_run(state, elapsed, thread_id=thread)
+
+
+def submit_human_review(
+    reader: SectionReader,
+    thread_id: str,
+    edits: Mapping[str, object],
+    *,
+    checkpointer: BaseCheckpointSaver[Any],
+    today: date | None = None,
+) -> GraphRun:
+    """Resume a paused human review and validate the edited fields.
+
+    ``thread_id`` selects the checkpoint. Edits are applied in code and
+    checked with the same rules as model output. This does not call the model
+    and does not start another repair.
+    """
+    compiled = compile_document_graph(reader, today=today, checkpointer=checkpointer)
+    started = time.perf_counter()
+    state = compiled.invoke(
+        Command(resume=dict(edits)),
+        _thread_config(thread_id),
+    )
+    elapsed = time.perf_counter() - started
+    rejected = state.get("rejected_fields") or ()
+    if isinstance(rejected, tuple) and rejected:
+        raise NonFlaggedFieldEdit(rejected)
+    return _graph_run(state, elapsed, thread_id=thread_id)
 
 
 def compile_document_graph(
-    reader: SectionReader, *, today: date | None = None
+    reader: SectionReader,
+    *,
+    today: date | None = None,
+    checkpointer: BaseCheckpointSaver[Any] | None = None,
 ) -> _CompiledGraph:
-    """Fan out to both section agents, validate, and repair once."""
+    """Fan out to both section agents, validate, repair once, then review."""
 
     def read_header(state: DocumentState) -> dict[str, object]:
         return _read(reader, state, Section.HEADER)
@@ -129,6 +215,9 @@ def compile_document_graph(
     def validate_after_repair(state: DocumentState) -> dict[str, object]:
         return _validate(state, today=today, record_initial=False)
 
+    def apply_human_edits(state: DocumentState) -> dict[str, object]:
+        return _apply_human_edits(state, today=today)
+
     builder = StateGraph(DocumentState)
     builder.add_node("read_header", read_header)
     builder.add_node("read_line_items", read_line_items)
@@ -139,6 +228,8 @@ def compile_document_graph(
     builder.add_node("repair_line_items", repair_line_items)
     builder.add_node("merge_repair", _merge)
     builder.add_node("validate_after_repair", validate_after_repair)
+    builder.add_node("human_review", _human_review)
+    builder.add_node("apply_human_edits", apply_human_edits)
     builder.add_edge(START, "read_header")
     builder.add_edge(START, "read_line_items")
     builder.add_edge(["read_header", "read_line_items"], "merge")
@@ -148,8 +239,12 @@ def compile_document_graph(
     builder.add_edge("route_repair", "repair_line_items")
     builder.add_edge(["repair_header", "repair_line_items"], "merge_repair")
     builder.add_edge("merge_repair", "validate_after_repair")
-    builder.add_edge("validate_after_repair", END)
-    return cast(_CompiledGraph, builder.compile())
+    builder.add_conditional_edges("validate_after_repair", _route_after_repair)
+    builder.add_edge("human_review", "apply_human_edits")
+    builder.add_conditional_edges("apply_human_edits", _route_after_human_edits)
+    saver = InMemorySaver() if checkpointer is None else checkpointer
+    _allow_checkpoint_types(saver)
+    return cast(_CompiledGraph, builder.compile(checkpointer=saver))
 
 
 def document_graph_nodes(reader: SectionReader) -> frozenset[str]:
@@ -284,15 +379,47 @@ def _validate(
 
 
 def _route_after_validation(state: DocumentState) -> str:
+    if _needs_repair(state):
+        return "route_repair"
+    if _needs_human_review(state):
+        return "human_review"
+    return END
+
+
+def _route_after_repair(state: DocumentState) -> str:
+    if _needs_human_review(state):
+        return "human_review"
+    return END
+
+
+def _route_after_human_edits(state: DocumentState) -> str:
+    rejected = state.get("rejected_fields") or ()
+    if isinstance(rejected, tuple) and rejected:
+        return "human_review"
     report = state.get("report")
-    if (
+    if isinstance(report, ValidationReport) and _flagged(report):
+        return "human_review"
+    return END
+
+
+def _needs_repair(state: DocumentState) -> bool:
+    report = state.get("report")
+    return (
         isinstance(report, ValidationReport)
         and state.get("extraction_failure") is None
         and isinstance(state.get("extraction"), Extraction)
         and report.outcome is DocumentOutcome.NEEDS_REPAIR
-    ):
-        return "route_repair"
-    return END
+    )
+
+
+def _needs_human_review(state: DocumentState) -> bool:
+    report = state.get("report")
+    return (
+        isinstance(report, ValidationReport)
+        and state.get("extraction_failure") is None
+        and isinstance(state.get("extraction"), Extraction)
+        and report.outcome is not DocumentOutcome.ACCEPTED
+    )
 
 
 def _route_repair(state: DocumentState) -> dict[str, object]:
@@ -307,7 +434,81 @@ def _route_repair(state: DocumentState) -> dict[str, object]:
     }
 
 
-def _graph_run(state: Mapping[str, object], latency_seconds: float) -> GraphRun:
+def _human_review(state: DocumentState) -> dict[str, object]:
+    report = state.get("report")
+    if not isinstance(report, ValidationReport):
+        return {"pending_edits": {}}
+    flagged = _flagged(report)
+    if not flagged:
+        return {"pending_edits": {}}
+    edits = interrupt(
+        {
+            "flagged_fields": list(flagged),
+            "review_messages": list(report.review_messages),
+        }
+    )
+    if not isinstance(edits, dict):
+        raise TypeError("Human review edits must map field paths to values.")
+    rejected = tuple(field for field in edits if field not in flagged)
+    if rejected:
+        return {"pending_edits": {}, "rejected_fields": rejected}
+    return {"pending_edits": dict(edits), "rejected_fields": ()}
+
+
+def _apply_human_edits(
+    state: DocumentState, *, today: date | None
+) -> dict[str, object]:
+    extraction = state.get("extraction")
+    edits = state.get("pending_edits") or {}
+    if (
+        not isinstance(extraction, Extraction)
+        or not isinstance(edits, dict)
+        or not edits
+    ):
+        return {}
+    updated = _apply_field_edits(extraction, edits)
+    previous = state.get("human_fields") or ()
+    if not isinstance(previous, tuple):
+        previous = ()
+    return {
+        "extraction": updated,
+        "header": updated.header,
+        "line_items": updated.line_items,
+        "report": validate(updated, today=today),
+        "human_fields": tuple(dict.fromkeys((*previous, *edits))),
+    }
+
+
+def _apply_field_edits(
+    extraction: Extraction, edits: Mapping[str, object]
+) -> Extraction:
+    header_updates: dict[str, object] = {}
+    item_updates: dict[int, dict[str, object]] = {}
+    for path, value in edits.items():
+        header_field = _HEADER_FIELD.fullmatch(path)
+        if header_field is not None:
+            header_updates[header_field.group(1)] = value
+            continue
+        item_field = _ITEM_FIELD.fullmatch(path)
+        if item_field is not None:
+            item_updates.setdefault(int(item_field.group(1)), {})[
+                item_field.group(2)
+            ] = value
+            continue
+        raise ValueError(f"Unknown extraction field: {path}")
+    header = Header.model_validate({**extraction.header.model_dump(), **header_updates})
+    items = list(extraction.line_items)
+    for index, updates in item_updates.items():
+        items[index] = LineItem.model_validate({**items[index].model_dump(), **updates})
+    return Extraction(header=header, line_items=tuple(items))
+
+
+def _graph_run(
+    state: Mapping[str, object],
+    latency_seconds: float,
+    *,
+    thread_id: str | None,
+) -> GraphRun:
     extraction = state.get("extraction")
     report = state.get("report")
     initial = state.get("initial_report")
@@ -317,6 +518,7 @@ def _graph_run(state: Mapping[str, object], latency_seconds: float) -> GraphRun:
     resolved_initial = initial if isinstance(initial, ValidationReport) else None
     resolved_failure = failure if isinstance(failure, ExtractionFailure) else None
     input_tokens, cached_input_tokens, output_tokens = _tokens(state)
+    human_fields = state.get("human_fields", ())
     return GraphRun(
         outcome=_public_outcome(
             resolved_extraction,
@@ -333,6 +535,9 @@ def _graph_run(state: Mapping[str, object], latency_seconds: float) -> GraphRun:
         cached_input_tokens=cached_input_tokens,
         output_tokens=output_tokens,
         latency_seconds=latency_seconds,
+        thread_id=thread_id,
+        awaiting_human_review=bool(state.get("__interrupt__")),
+        human_fields=human_fields if isinstance(human_fields, tuple) else (),
     )
 
 
@@ -435,6 +640,20 @@ def _usage_key(section: Section, *, repair: bool) -> str:
     if section is Section.HEADER:
         return "header_repair_usage" if repair else "header_usage"
     return "line_items_repair_usage" if repair else "line_items_usage"
+
+
+def _thread_config(thread_id: str) -> dict[str, dict[str, str]]:
+    return {"configurable": {"thread_id": thread_id}}
+
+
+def _allow_checkpoint_types(checkpointer: BaseCheckpointSaver[Any]) -> None:
+    serde = getattr(checkpointer, "serde", None)
+    if not isinstance(serde, JsonPlusSerializer):
+        return
+    checkpointer.serde = JsonPlusSerializer(
+        allowed_msgpack_modules=_CHECKPOINT_TYPES,
+        pickle_fallback=serde.pickle_fallback,
+    )
 
 
 def _usage(reading: SectionReading) -> TokenUsage:
