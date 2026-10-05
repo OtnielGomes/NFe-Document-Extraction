@@ -29,6 +29,54 @@ def test_disabling_tracing_turns_the_sdk_off_after_it_already_read_the_env(
     assert tracing_is_disabled()
 
 
+def test_disabling_tracing_turns_the_sdk_off_when_tracing_v2_is_on(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setenv("LANGSMITH_TRACING_V2", "true")
+    from langsmith.utils import get_env_var, tracing_is_enabled
+
+    get_env_var.cache_clear()
+    assert tracing_is_enabled() is True
+
+    disable_tracing()
+
+    assert tracing_is_enabled() is False
+    assert tracing_is_disabled()
+    assert os.environ["LANGSMITH_TRACING_V2"] == "false"
+
+
+def test_disabling_tracing_overrides_configure_enabled(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    import langsmith
+    from langsmith.utils import tracing_is_enabled
+
+    monkeypatch.setenv("LANGSMITH_API_KEY", "test-key")
+    langsmith.configure(enabled=True)
+    assert tracing_is_enabled() is True
+
+    disable_tracing()
+
+    assert tracing_is_enabled() is False
+    assert tracing_is_disabled()
+
+
+def test_trace_flag_turns_the_sdk_on_when_tracing_v2_is_off(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setenv("LANGSMITH_API_KEY", "test-key")
+    monkeypatch.setenv("LANGSMITH_TRACING_V2", "false")
+    from langsmith.utils import get_env_var, tracing_is_enabled
+
+    get_env_var.cache_clear()
+    assert tracing_is_enabled() is False
+
+    choice = resolve_tracing(trace=True, no_trace=False)
+
+    assert choice.trace_models is True
+    assert tracing_is_enabled() is True
+
+
 def test_trace_flag_turns_the_sdk_on_after_it_already_read_tracing_as_off(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -98,6 +146,24 @@ def test_no_trace_wins_over_a_key_and_an_explicit_trace_flag(
     assert choice.upload is False
     assert choice.trace_models is False
     assert tracing_is_disabled()
+
+
+def test_a_key_does_not_trace_when_only_tracing_v2_was_on(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setenv("LANGSMITH_API_KEY", "test-key")
+    monkeypatch.setenv("LANGSMITH_TRACING_V2", "true")
+    from langsmith.utils import get_env_var, tracing_is_enabled
+
+    get_env_var.cache_clear()
+    assert tracing_is_enabled() is True
+
+    choice = resolve_tracing(trace=False, no_trace=False)
+
+    assert choice.upload is True
+    assert choice.trace_models is False
+    assert tracing_is_enabled() is False
+    assert "LANGSMITH_TRACING" not in os.environ
 
 
 def test_a_key_uploads_without_tracing_model_calls(

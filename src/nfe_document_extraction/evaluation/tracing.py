@@ -25,18 +25,14 @@ _ON = frozenset({"true", "1", "yes", "on"})
 def disable_tracing() -> None:
     """Force tracing off for this process and the environment."""
     _forced_off.set(True)
-    os.environ["LANGSMITH_TRACING"] = "false"
-    os.environ["LANGCHAIN_TRACING_V2"] = "false"
+    _set_tracing_env(False)
     _forget_cached_tracing_flag()
+    _set_sdk_tracing_enabled(False)
 
 
 def tracing_is_disabled() -> bool:
     """True when tracing was disabled and LangSmith still agrees it is off."""
-    env_off = (
-        _forced_off.get()
-        and os.environ.get("LANGSMITH_TRACING") == "false"
-        and os.environ.get("LANGCHAIN_TRACING_V2") == "false"
-    )
+    env_off = _forced_off.get() and _tracing_env_is(False)
     return env_off and _sdk_tracing_is_enabled() is False
 
 
@@ -78,10 +74,38 @@ def resolve_tracing(*, trace: bool, no_trace: bool) -> TracingChoice:
         return TracingChoice(upload=False, trace_models=False)
     trace_models = trace or (env is not None and env.strip().lower() in _ON)
     if trace_models:
-        os.environ["LANGSMITH_TRACING"] = "true"
-        os.environ["LANGCHAIN_TRACING_V2"] = "true"
+        _set_tracing_env(True)
         _forget_cached_tracing_flag()
+        _set_sdk_tracing_enabled(True)
+    else:
+        _silence_model_traces()
     return TracingChoice(upload=True, trace_models=trace_models)
+
+
+_TRACING_ENV = (
+    "LANGSMITH_TRACING",
+    "LANGSMITH_TRACING_V2",
+    "LANGCHAIN_TRACING_V2",
+)
+
+
+def _silence_model_traces() -> None:
+    """Keep an upload from also tracing the graph when this run did not ask for it."""
+    os.environ["LANGSMITH_TRACING_V2"] = "false"
+    os.environ["LANGCHAIN_TRACING_V2"] = "false"
+    _forget_cached_tracing_flag()
+    _set_sdk_tracing_enabled(False)
+
+
+def _set_tracing_env(enabled: bool) -> None:
+    value = "true" if enabled else "false"
+    for name in _TRACING_ENV:
+        os.environ[name] = value
+
+
+def _tracing_env_is(enabled: bool) -> bool:
+    value = "true" if enabled else "false"
+    return all(os.environ.get(name) == value for name in _TRACING_ENV)
 
 
 def _forget_cached_tracing_flag() -> None:
@@ -89,6 +113,13 @@ def _forget_cached_tracing_flag() -> None:
     from langsmith.utils import get_env_var
 
     get_env_var.cache_clear()
+
+
+def _set_sdk_tracing_enabled(enabled: bool) -> None:
+    """Override a process-wide LangSmith setting that beats the environment."""
+    import langsmith
+
+    langsmith.configure(enabled=enabled)
 
 
 def _sdk_tracing_is_enabled() -> bool | str:
