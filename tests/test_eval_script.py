@@ -3,15 +3,20 @@
 import json
 import os
 import shutil
-from datetime import date
+import uuid
+from dataclasses import dataclass
+from datetime import UTC, date, datetime
 from pathlib import Path
 
+import pytest
 from test_identifier_rules import _extraction
 
 from nfe_document_extraction.agents.baseline import BaselineReading
 from nfe_document_extraction.agents.config import ApproachConfig
 from nfe_document_extraction.domain import Extraction
 from nfe_document_extraction.env import load_env_file
+from nfe_document_extraction.evaluation.langsmith import score_extraction
+from nfe_document_extraction.evaluation.tracing import tracing_is_disabled
 from nfe_document_extraction.graph import GraphRun
 from nfe_document_extraction.synthetic import SyntheticDocument, write_synthetic_set
 from nfe_document_extraction.validation import DocumentOutcome, validate
@@ -223,6 +228,131 @@ def test_unknown_model_stops_before_a_model_call(monkeypatch, capsys) -> None:
     assert "pricing table" in capsys.readouterr().err
 
 
+def test_without_a_langsmith_key_the_eval_only_writes_results(
+    monkeypatch, tmp_path
+) -> None:
+    _patch_models(monkeypatch)
+    monkeypatch.setattr(run_eval, "Client", _langsmith_must_not_be_called)
+    monkeypatch.setattr(run_eval, "wrap_openai", _langsmith_must_not_be_called)
+    output = tmp_path / "results.md"
+
+    code = run_eval.main(
+        ["--dataset", str(_one_invoice(tmp_path)), "--output", str(output)]
+    )
+
+    assert code == 0
+    assert output.is_file()
+    assert "| single-call baseline | digital PDF | synthetic | 1 |" in output.read_text(
+        encoding="utf-8"
+    )
+    assert tracing_is_disabled() is False
+
+
+def test_a_langsmith_key_uploads_the_commit_and_dataset_version(
+    monkeypatch, tmp_path
+) -> None:
+    _patch_models(monkeypatch)
+    monkeypatch.setenv("LANGSMITH_API_KEY", "test-key")
+    wrapped: list[object] = []
+    monkeypatch.setattr(
+        run_eval, "wrap_openai", lambda client: wrapped.append(client) or client
+    )
+    monkeypatch.setattr(run_eval, "repository_commit", lambda root: "abc123")
+    client = _UploadClient()
+    monkeypatch.setattr(run_eval, "Client", lambda: client)
+    output = tmp_path / "results.md"
+
+    code = run_eval.main(
+        ["--dataset", str(_one_invoice(tmp_path)), "--output", str(output)]
+    )
+
+    assert code == 0
+    assert output.is_file()
+    assert wrapped == []
+    assert len(client.calls) == 4
+    assert {call["metadata"]["commit"] for call in client.calls} == {"abc123"}
+    assert {call["metadata"]["dataset_version"] for call in client.calls} == {
+        "2026-10-05T12:00:00+00:00"
+    }
+    assert {call["metadata"]["approach"] for call in client.calls} == {
+        "single-call baseline",
+        "cheap vision",
+        "strong vision",
+        "text layer + text model",
+    }
+    assert all(call["evaluators"] == [score_extraction] for call in client.calls)
+
+
+def test_trace_flag_wraps_the_model_client(monkeypatch, tmp_path) -> None:
+    _patch_models(monkeypatch)
+    monkeypatch.setenv("LANGSMITH_API_KEY", "test-key")
+    wrapped: list[object] = []
+    monkeypatch.setattr(
+        run_eval, "wrap_openai", lambda client: wrapped.append(client) or client
+    )
+    monkeypatch.setattr(run_eval, "repository_commit", lambda root: "abc123")
+    monkeypatch.setattr(run_eval, "Client", lambda: _UploadClient())
+    output = tmp_path / "results.md"
+
+    code = run_eval.main(
+        [
+            "--dataset",
+            str(_one_invoice(tmp_path)),
+            "--output",
+            str(output),
+            "--trace",
+        ]
+    )
+
+    assert code == 0
+    assert len(wrapped) == 1
+    assert os.environ["LANGSMITH_TRACING"] == "true"
+
+
+def test_no_trace_writes_results_and_sends_nothing(monkeypatch, tmp_path) -> None:
+    _patch_models(monkeypatch)
+    monkeypatch.setenv("LANGSMITH_API_KEY", "test-key")
+    monkeypatch.setenv("LANGSMITH_TRACING", "true")
+    monkeypatch.setattr(run_eval, "Client", _langsmith_must_not_be_called)
+    monkeypatch.setattr(run_eval, "wrap_openai", _langsmith_must_not_be_called)
+    output = tmp_path / "results.md"
+
+    code = run_eval.main(
+        [
+            "--dataset",
+            str(_one_invoice(tmp_path)),
+            "--output",
+            str(output),
+            "--no-trace",
+        ]
+    )
+
+    assert code == 0
+    assert "| cheap vision | digital PDF | synthetic | 1 |" in output.read_text(
+        encoding="utf-8"
+    )
+    assert tracing_is_disabled()
+
+
+def test_missing_langsmith_dataset_keeps_the_results_file(
+    monkeypatch, tmp_path, capsys
+) -> None:
+    _patch_models(monkeypatch)
+    monkeypatch.setenv("LANGSMITH_API_KEY", "test-key")
+    monkeypatch.setattr(run_eval, "wrap_openai", lambda client: client)
+    monkeypatch.setattr(run_eval, "repository_commit", lambda root: "abc123")
+    monkeypatch.setattr(run_eval, "Client", _MissingDataset)
+    output = tmp_path / "results.md"
+
+    code = run_eval.main(
+        ["--dataset", str(_one_invoice(tmp_path)), "--output", str(output)]
+    )
+
+    assert code == 1
+    assert output.is_file()
+    assert "sync_dataset.py" in capsys.readouterr().err
+
+
 def test_env_file_sets_missing_keys_without_overriding(monkeypatch, tmp_path) -> None:
     env_file = tmp_path / ".env"
     env_file.write_text(
@@ -246,6 +376,80 @@ QUOTED="abc"
     assert os.environ["ALREADY"] == "from-env"
     assert os.environ["QUOTED"] == "abc"
     assert "EMPTY" not in os.environ
+
+
+def _patch_models(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(run_eval, "load_env_file", lambda path: None)
+    monkeypatch.setenv("OPENAI_API_KEY", "test-key")
+    monkeypatch.setattr(run_eval, "OpenAI", lambda: object())
+    monkeypatch.setattr(run_eval, "VisionSectionReader", _RecordingReader)
+    monkeypatch.setattr(run_eval, "TextLayerSectionReader", _RecordingReader)
+    monkeypatch.setattr(run_eval, "compile_document_graph", lambda reader: reader)
+    monkeypatch.setattr(run_eval, "extract_baseline", _baseline)
+    monkeypatch.setattr(run_eval, "run_document", _graph_run)
+
+
+def _one_invoice(tmp_path: Path) -> Path:
+    folder = tmp_path / "synthetic" / "synthetic-001"
+    folder.mkdir(parents=True)
+    (folder / "metadata.json").write_text(
+        json.dumps(
+            {
+                "nfe_id": "synthetic-001",
+                "has_icms_st": False,
+                "origin": "synthetic",
+                "split": "clean",
+            }
+        ),
+        encoding="utf-8",
+    )
+    (folder / "ground_truth.json").write_text(
+        _extraction().model_dump_json(),
+        encoding="utf-8",
+    )
+    (folder / "danfe.pdf").write_bytes(b"%PDF-1.4")
+    (folder / "renditions.json").write_text(
+        json.dumps([{"input_type": "digital PDF"}]),
+        encoding="utf-8",
+    )
+    return folder.parent
+
+
+def _langsmith_must_not_be_called(*args: object, **kwargs: object) -> object:
+    raise AssertionError("LangSmith was contacted")
+
+
+@dataclass(frozen=True)
+class _Revision:
+    id: uuid.UUID
+    modified_at: datetime
+    created_at: datetime | None = None
+
+
+class _UploadClient:
+    def __init__(self) -> None:
+        self.dataset_id = uuid.uuid4()
+        self.calls: list[dict[str, object]] = []
+
+    def has_dataset(self, *, dataset_name: str) -> bool:
+        return True
+
+    def read_dataset(self, *, dataset_name: str) -> _Revision:
+        return _Revision(self.dataset_id, datetime(2026, 10, 5, 12, 0, tzinfo=UTC))
+
+    def evaluate(self, target: object, /, **kwargs: object) -> None:
+        self.calls.append(kwargs)
+
+
+class _MissingDataset:
+    def has_dataset(self, *, dataset_name: str) -> bool:
+        return False
+
+    def read_dataset(self, *, dataset_name: str) -> object:
+        raise AssertionError("dataset was read")
+
+    def evaluate(self, target: object, /, **kwargs: object) -> None:
+        raise AssertionError("experiment was uploaded")
 
 
 def _not_applicable(rendition: str) -> str:

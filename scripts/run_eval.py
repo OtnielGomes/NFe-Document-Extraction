@@ -1,4 +1,8 @@
-"""Run the local eval and write docs/results.md. No LangSmith account is required."""
+"""Run the local eval and write docs/results.md.
+
+LangSmith is optional. When LANGSMITH_API_KEY is set, the same run is uploaded
+as an experiment. ``--trace`` also traces model calls. ``--no-trace`` sends nothing.
+"""
 
 from __future__ import annotations
 
@@ -8,6 +12,7 @@ import sys
 from collections.abc import Sequence
 from pathlib import Path
 
+from langsmith import Client
 from openai import OpenAI
 
 from nfe_document_extraction.agents.baseline import extract_baseline
@@ -24,6 +29,7 @@ from nfe_document_extraction.agents.sections import (
     TextLayerSectionReader,
     VisionSectionReader,
 )
+from nfe_document_extraction.domain import Extraction
 from nfe_document_extraction.env import load_env_file
 from nfe_document_extraction.evaluation import render_results, summarize, token_cost_usd
 from nfe_document_extraction.evaluation.dataset import (
@@ -34,11 +40,20 @@ from nfe_document_extraction.evaluation.dataset import (
     load_synthetic_pdfs,
 )
 from nfe_document_extraction.evaluation.judge import judge_reading
+from nfe_document_extraction.evaluation.langsmith import (
+    DatasetNotSynced,
+    ScoredReading,
+    prediction_outputs,
+    repository_commit,
+    upload_recorded_run,
+)
 from nfe_document_extraction.evaluation.metrics import (
+    ExtractionFailure,
     InvoiceEvaluation,
     ResultRow,
     not_applicable_row,
 )
+from nfe_document_extraction.evaluation.tracing import resolve_tracing
 from nfe_document_extraction.graph import compile_document_graph, run_document
 from nfe_document_extraction.validation import DocumentOutcome
 
@@ -70,11 +85,26 @@ def main(argv: list[str] | None = None) -> int:
             "Examples are ordered by NF-e, digital PDF then simulated photo."
         ),
     )
+    tracing_flags = parser.add_mutually_exclusive_group()
+    tracing_flags.add_argument(
+        "--trace",
+        action="store_true",
+        help=(
+            "Trace model calls as well as uploading the experiment. "
+            "Requires a LangSmith key."
+        ),
+    )
+    tracing_flags.add_argument(
+        "--no-trace",
+        action="store_true",
+        help="Disable tracing for this run. No data is sent to LangSmith.",
+    )
     args = parser.parse_args(argv)
     if args.limit is not None and args.limit < 1:
         parser.error("--limit must be at least 1")
 
     load_env_file(_ROOT / ".env")
+    tracing = resolve_tracing(trace=args.trace, no_trace=args.no_trace)
     if not os.environ.get("OPENAI_API_KEY"):
         print(
             "OPENAI_API_KEY is missing. Copy .env.example to .env and set the key.",
@@ -93,39 +123,68 @@ def main(argv: list[str] | None = None) -> int:
     documents = load_synthetic_pdfs(args.dataset)
     if args.limit is not None:
         documents = documents[: args.limit]
-    client = OpenAI()
-    evaluations = collect_evaluations(documents, client, configs)
+    client = _model_client(tracing.trace_models)
+    scored = collect_evaluations(documents, client, configs)
     text = render_results(
-        _result_rows(evaluations, documents),
+        _result_rows(tuple(evaluation for evaluation, _ in scored), documents),
         model_snapshot=_snapshot_label(configs),
         pricing_as_of=configs[0].pricing_as_of.isoformat(),
     )
     args.output.parent.mkdir(parents=True, exist_ok=True)
     args.output.write_text(text, encoding="utf-8")
     print(f"Wrote {args.output}", flush=True)
+    if not tracing.upload:
+        return 0
+    try:
+        upload_recorded_run(
+            Client(),
+            tuple(reading for _, reading in scored),
+            documents,
+            commit=repository_commit(_ROOT),
+        )
+    except DatasetNotSynced as exc:
+        print(
+            f"LangSmith dataset {exc.name!r} is missing. Run scripts/sync_dataset.py.",
+            file=sys.stderr,
+        )
+        return 1
     return 0
+
+
+def _model_client(tracing_on: bool) -> OpenAI:
+    client = OpenAI()
+    if not tracing_on:
+        return client
+    return wrap_openai(client)
+
+
+def wrap_openai(client: OpenAI) -> OpenAI:
+    """Trace the OpenAI client. Tests replace this; model calls are not traced here."""
+    from langsmith.wrappers import wrap_openai as _wrap
+
+    return _wrap(client)
 
 
 def collect_evaluations(
     documents: Sequence[DatasetExample],
     client: OpenAI,
     configs: Sequence[ApproachConfig],
-) -> tuple[InvoiceEvaluation, ...]:
+) -> tuple[tuple[InvoiceEvaluation, ScoredReading], ...]:
     """Score the baseline, both vision approaches, and the text-layer approach."""
     baseline, *section_configs = configs
-    evaluations: list[InvoiceEvaluation] = []
-    evaluations.extend(_baseline(documents, client, baseline))
+    scored: list[tuple[InvoiceEvaluation, ScoredReading]] = []
+    scored.extend(_baseline(documents, client, baseline))
     for config in section_configs:
-        evaluations.extend(_section_agents(documents, client, config))
-    return tuple(evaluations)
+        scored.extend(_section_agents(documents, client, config))
+    return tuple(scored)
 
 
 def _baseline(
     documents: Sequence[DatasetExample],
     client: OpenAI,
     config: ApproachConfig,
-) -> list[InvoiceEvaluation]:
-    evaluations: list[InvoiceEvaluation] = []
+) -> list[tuple[InvoiceEvaluation, ScoredReading]]:
+    scored: list[tuple[InvoiceEvaluation, ScoredReading]] = []
     total = len(documents)
     for index, document in enumerate(documents, start=1):
         print(f"{config.approach}: {document.nfe_id} ({index}/{total})", flush=True)
@@ -135,25 +194,31 @@ def _baseline(
             config=config,
             pages=document.pages,
         )
-        evaluations.append(
-            judge_reading(
-                approach=config.approach,
-                rendition=document.rendition,
-                origin=document.origin,
-                ground_truth=document.ground_truth,
-                extraction=reading.extraction,
-                extraction_failure=reading.failure,
-                planted_rule=document.planted_rule,
-                cost_usd=token_cost_usd(
-                    reading.input_tokens,
-                    reading.cached_input_tokens,
-                    reading.output_tokens,
-                    config,
+        scored.append(
+            _scored(
+                document,
+                config.approach,
+                judge_reading(
+                    approach=config.approach,
+                    rendition=document.rendition,
+                    origin=document.origin,
+                    ground_truth=document.ground_truth,
+                    extraction=reading.extraction,
+                    extraction_failure=reading.failure,
+                    planted_rule=document.planted_rule,
+                    cost_usd=token_cost_usd(
+                        reading.input_tokens,
+                        reading.cached_input_tokens,
+                        reading.output_tokens,
+                        config,
+                    ),
+                    latency_seconds=reading.latency_seconds,
                 ),
-                latency_seconds=reading.latency_seconds,
+                reading.extraction,
+                reading.failure,
             )
         )
-    return evaluations
+    return scored
 
 
 def _result_rows(
@@ -190,11 +255,11 @@ def _section_agents(
     documents: Sequence[DatasetExample],
     client: OpenAI,
     config: ApproachConfig,
-) -> list[InvoiceEvaluation]:
+) -> list[tuple[InvoiceEvaluation, ScoredReading]]:
     reader = _section_reader(client, config)
     selected = _documents_for_approach(config, documents)
     graph = compile_document_graph(reader)
-    evaluations: list[InvoiceEvaluation] = []
+    scored: list[tuple[InvoiceEvaluation, ScoredReading]] = []
     total = len(selected)
     for index, document in enumerate(selected, start=1):
         print(f"{config.approach}: {document.nfe_id} ({index}/{total})", flush=True)
@@ -205,29 +270,53 @@ def _section_agents(
             pages=document.pages,
         )
         initial_rules = None if run.initial_report is None else run.initial_report.rules
-        evaluations.append(
-            judge_reading(
-                approach=config.approach,
-                rendition=document.rendition,
-                origin=document.origin,
-                ground_truth=document.ground_truth,
-                extraction=run.extraction,
-                extraction_failure=run.extraction_failure,
-                planted_rule=document.planted_rule,
-                cost_usd=token_cost_usd(
-                    run.input_tokens,
-                    run.cached_input_tokens,
-                    run.output_tokens,
-                    config,
+        scored.append(
+            _scored(
+                document,
+                config.approach,
+                judge_reading(
+                    approach=config.approach,
+                    rendition=document.rendition,
+                    origin=document.origin,
+                    ground_truth=document.ground_truth,
+                    extraction=run.extraction,
+                    extraction_failure=run.extraction_failure,
+                    planted_rule=document.planted_rule,
+                    cost_usd=token_cost_usd(
+                        run.input_tokens,
+                        run.cached_input_tokens,
+                        run.output_tokens,
+                        config,
+                    ),
+                    latency_seconds=run.latency_seconds,
+                    repaired=run.repair_attempted
+                    and run.outcome is DocumentOutcome.ACCEPTED,
+                    reached_human_review=run.outcome is DocumentOutcome.HUMAN_REVIEW,
+                    initial_rules=initial_rules,
                 ),
-                latency_seconds=run.latency_seconds,
-                repaired=run.repair_attempted
-                and run.outcome is DocumentOutcome.ACCEPTED,
-                reached_human_review=run.outcome is DocumentOutcome.HUMAN_REVIEW,
-                initial_rules=initial_rules,
+                run.extraction,
+                run.extraction_failure,
             )
         )
-    return evaluations
+    return scored
+
+
+def _scored(
+    document: DatasetExample,
+    approach: str,
+    evaluation: InvoiceEvaluation,
+    extraction: Extraction | None,
+    failure: ExtractionFailure | None,
+) -> tuple[InvoiceEvaluation, ScoredReading]:
+    return evaluation, ScoredReading(
+        approach=approach,
+        nfe_id=document.nfe_id,
+        input_type=document.input_type,
+        outputs=prediction_outputs(
+            extraction,
+            None if failure is None else failure.value,
+        ),
+    )
 
 
 def _snapshot_label(configs: Sequence[ApproachConfig]) -> str:

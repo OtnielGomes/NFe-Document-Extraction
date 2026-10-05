@@ -24,6 +24,9 @@ class DatasetExample:
     pdf: bytes
     ground_truth: Extraction
     planted_rule: str | None
+    has_icms_st: bool
+    split: str
+    planted_field: str | None
     rendition: str = DIGITAL_PDF
     pages: tuple[bytes, ...] = ()
 
@@ -44,8 +47,7 @@ def load_synthetic_pdfs(root: Path) -> tuple[DatasetExample, ...]:
     examples: list[DatasetExample] = []
     for folder in sorted(path for path in root.iterdir() if path.is_dir()):
         metadata = json.loads((folder / "metadata.json").read_text(encoding="utf-8"))
-        planted = metadata.get("planted_error")
-        planted_rule = None if planted is None else str(planted["rule"])
+        planted_rule, planted_field = _planted(metadata)
         ground_truth = Extraction.model_validate_json(
             (folder / "ground_truth.json").read_text(encoding="utf-8")
         )
@@ -63,6 +65,7 @@ def load_synthetic_pdfs(root: Path) -> tuple[DatasetExample, ...]:
                 metadata,
                 ground_truth,
                 planted_rule,
+                planted_field,
                 input_type,
                 require_photo_pages=has_manifest,
             )
@@ -76,6 +79,7 @@ def _example(
     metadata: dict[str, object],
     ground_truth: Extraction,
     planted_rule: str | None,
+    planted_field: str | None,
     input_type: str,
     *,
     require_photo_pages: bool,
@@ -93,9 +97,40 @@ def _example(
         pdf=pdf,
         ground_truth=ground_truth,
         planted_rule=planted_rule,
+        has_icms_st=_bool_flag(metadata, "has_icms_st"),
+        split=_split(metadata),
+        planted_field=planted_field,
         rendition=input_type,
         pages=pages,
     )
+
+
+_SPLITS = frozenset({"clean", "planted_errors"})
+
+
+def _planted(metadata: dict[str, object]) -> tuple[str | None, str | None]:
+    planted = metadata.get("planted_error")
+    if planted is None:
+        return None, None
+    if not isinstance(planted, dict) or "rule" not in planted or "field" not in planted:
+        raise ValueError(
+            f"{metadata.get('nfe_id')} planted_error must include rule and field"
+        )
+    return str(planted["rule"]), str(planted["field"])
+
+
+def _bool_flag(metadata: dict[str, object], name: str) -> bool:
+    value = metadata[name]
+    if not isinstance(value, bool):
+        raise TypeError(f"{metadata.get('nfe_id')} {name} must be a boolean")
+    return value
+
+
+def _split(metadata: dict[str, object]) -> str:
+    split = str(metadata["split"])
+    if split not in _SPLITS:
+        raise ValueError(f"{metadata.get('nfe_id')} has unknown split {split}")
+    return split
 
 
 def _simulated_photo_pages(folder: Path) -> tuple[bytes, ...]:
