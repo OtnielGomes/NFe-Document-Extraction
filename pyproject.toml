@@ -11,6 +11,7 @@ dependencies = [
     "langgraph-checkpoint-sqlite>=3.1.1",
     "langsmith>=0.14.4",
     "openai>=3.24.0",
+    "openpyxl>=3.1.5",
     "pillow>=12.3.0",
     "pydantic>=2.13.5",
     "pypdfium2>=5.13.0",

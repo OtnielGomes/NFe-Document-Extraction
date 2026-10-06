@@ -14,6 +14,7 @@ from fastapi import FastAPI
 from PIL import Image
 
 from nfe_document_extraction.app.errors import RequestRejected
+from nfe_document_extraction.app.excel import excel_download_path
 from nfe_document_extraction.app.gallery import GalleryItem, load_gallery
 from nfe_document_extraction.app.service import NO_REVIEW, ExtractionService
 from nfe_document_extraction.app.uploads import HEIC_NOT_ACCEPTED, UNSUPPORTED_TYPE
@@ -21,6 +22,7 @@ from nfe_document_extraction.app.uploads import HEIC_NOT_ACCEPTED, UNSUPPORTED_T
 __all__ = [
     "DemoActions",
     "Refusal",
+    "document_panel",
     "editable_field_paths",
     "field_rows",
     "gradio_client_ip",
@@ -313,6 +315,55 @@ def _uploaded_path(value: object) -> str | None:
     return None
 
 
+def document_panel(
+    actions: DemoActions, body: Mapping[str, object], screen: gr.State
+) -> None:
+    """Outcome, fields, Excel download, and the review form for one document."""
+    outcome = str(body.get("outcome"))
+    label = _OUTCOME_LABEL.get(outcome, outcome)
+    gr.Markdown(f"**Outcome:** {label}", elem_id="document-outcome")
+    messages = body.get("review_messages")
+    if isinstance(messages, list) and messages:
+        gr.Markdown("\n".join(f"- {message}" for message in messages))
+    gr.Dataframe(
+        value=field_rows(body),
+        headers=["Field", "Status", "Value", "Messages"],
+        label="Fields",
+        interactive=False,
+        max_height=480,
+    )
+    gr.DownloadButton(
+        label="Download Excel",
+        value=str(excel_download_path(body)),
+        elem_id="download-excel",
+    )
+    if outcome == "human_review" and not body.get("thread_id"):
+        gr.Markdown(
+            "This cached result is not an open review. "
+            "Upload a document to correct flagged fields."
+        )
+    fields = review_inputs(body)
+    if not fields:
+        return
+    gr.Markdown("Edit only the flagged fields. The same rules check your corrections.")
+    boxes = [
+        gr.Textbox(
+            value=field.value,
+            label=field.path,
+            key=field.path,
+            interactive=True,
+        )
+        for field in fields
+    ]
+    submit = gr.Button("Submit corrections")
+
+    def _submit(*values: object) -> dict[str, object]:
+        edits = {field.path: value for field, value in zip(fields, values, strict=True)}
+        return present_review(actions, {"notice": None, "body": body}, edits)
+
+    submit.click(_submit, boxes, screen)
+
+
 def build_blocks(actions: DemoActions) -> gr.Blocks:
     """The demo page. Gallery clicks never call the extraction service."""
     with gr.Blocks(title="NFe Document Extraction") as demo:
@@ -349,52 +400,7 @@ def build_blocks(actions: DemoActions) -> gr.Blocks:
                         if not notice:
                             gr.Markdown("Select a gallery invoice or upload a DANFE.")
                         return
-                    outcome = str(body.get("outcome"))
-                    label = _OUTCOME_LABEL.get(outcome, outcome)
-                    gr.Markdown(f"**Outcome:** {label}", elem_id="document-outcome")
-                    messages = body.get("review_messages")
-                    if isinstance(messages, list) and messages:
-                        gr.Markdown("\n".join(f"- {message}" for message in messages))
-                    gr.Dataframe(
-                        value=field_rows(body),
-                        headers=["Field", "Status", "Value", "Messages"],
-                        label="Fields",
-                        interactive=False,
-                        max_height=480,
-                    )
-                    if outcome == "human_review" and not body.get("thread_id"):
-                        gr.Markdown(
-                            "This cached result is not an open review. "
-                            "Upload a document to correct flagged fields."
-                        )
-                    fields = review_inputs(body)
-                    if not fields:
-                        return
-                    gr.Markdown(
-                        "Edit only the flagged fields. "
-                        "The same rules check your corrections."
-                    )
-                    boxes = [
-                        gr.Textbox(
-                            value=field.value,
-                            label=field.path,
-                            key=field.path,
-                            interactive=True,
-                        )
-                        for field in fields
-                    ]
-                    submit = gr.Button("Submit corrections")
-
-                    def _submit(*values: object) -> dict[str, object]:
-                        edits = {
-                            field.path: value
-                            for field, value in zip(fields, values, strict=True)
-                        }
-                        return present_review(
-                            actions, {"notice": None, "body": body}, edits
-                        )
-
-                    submit.click(_submit, boxes, screen)
+                    document_panel(actions, body, screen)
 
         def _on_select(evt: gr.SelectData) -> dict[str, object]:
             return present_gallery_selection(actions, evt.index)

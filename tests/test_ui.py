@@ -6,14 +6,19 @@ are cached readings of the printed synthetic invoices.
 
 from __future__ import annotations
 
+import io
 import json
 from datetime import date
+from decimal import Decimal
 from pathlib import Path
+from urllib.parse import unquote
 
+import gradio as gr
 import pytest
 from fastapi.testclient import TestClient
+from openpyxl import load_workbook
 from test_api import RecordingMonitor, ScriptedReader, _pdf
-from test_identifier_rules import ISSUER_CNPJ, _extraction
+from test_identifier_rules import ISSUER_CNPJ, _extraction, _line_item
 
 from nfe_document_extraction.agents.config import CHEAP_VISION, load_approach_config
 from nfe_document_extraction.agents.sections import (
@@ -27,6 +32,7 @@ from nfe_document_extraction.app.service import ExtractionService
 from nfe_document_extraction.app.ui import (
     DemoActions,
     Refusal,
+    document_panel,
     editable_field_paths,
     field_rows,
     gradio_client_ip,
@@ -391,6 +397,68 @@ def _service(
         clock=lambda: _TODAY,
         price=load_approach_config(CHEAP_VISION),
     )
+
+
+def test_the_page_offers_excel_for_gallery_uploads_and_reviewed_results() -> None:
+    gallery = load_gallery(_SYNTHETIC, today=_TODAY)
+    actions = DemoActions(
+        _service(
+            ScriptedReader(_extraction(line_items=(_line_item(quantity=Decimal(9)),))),
+            RecordingMonitor(),
+        ),
+        gallery,
+    )
+    uploaded = actions.upload(
+        _pdf(1),
+        filename="invoice.pdf",
+        content_type="application/pdf",
+        client_ip=_IP,
+    )
+    assert isinstance(uploaded, dict)
+    thread_id = uploaded["thread_id"]
+    assert isinstance(thread_id, str)
+    edits = {item.path: item.value for item in review_inputs(uploaded)}
+    edits["line_items[0].quantity"] = "1.2500"
+    reviewed = actions.submit_review(thread_id, edits)
+    assert isinstance(reviewed, dict)
+
+    offered = (
+        (actions.open_gallery_item(0), "nfe-1-1.xlsx"),
+        (uploaded, "nfe-123-1.xlsx"),
+        (reviewed, "nfe-123-1.xlsx"),
+    )
+    for body, filename in offered:
+        button = _excel_button(actions, body)
+        assert button.label == "Download Excel"
+        assert isinstance(button.value, dict)
+        assert button.value["orig_name"] == filename
+        book = load_workbook(_download_file(button.value))
+        assert book.sheetnames == ["Summary", "Header", "Line items"]
+
+
+def _excel_button(actions: DemoActions, body: dict[str, object]) -> gr.DownloadButton:
+    with gr.Blocks() as demo:
+        screen = gr.State({"notice": None, "body": body})
+        document_panel(actions, body, screen)
+    dataframes = [
+        block for block in demo.blocks.values() if isinstance(block, gr.Dataframe)
+    ]
+    buttons = [
+        block for block in demo.blocks.values() if isinstance(block, gr.DownloadButton)
+    ]
+    assert len(dataframes) == 1
+    assert len(buttons) == 1
+    assert dataframes[0]._id < buttons[0]._id
+    return buttons[0]
+
+
+def _download_file(value: dict[str, object]) -> io.BytesIO | Path:
+    raw = value.get("path")
+    assert isinstance(raw, str)
+    path = Path(unquote(raw))
+    if path.is_file():
+        return path
+    raise AssertionError(raw)
 
 
 def test_demo_client_starts_without_an_api_key(monkeypatch: pytest.MonkeyPatch) -> None:

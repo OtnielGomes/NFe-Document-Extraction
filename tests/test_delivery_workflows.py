@@ -1,4 +1,4 @@
-"""Delivery workflows: Space deploy after green checks, LLM eval on dispatch."""
+"""Delivery workflows: Space deploy, manual LLM eval, and local compose."""
 
 from pathlib import Path
 
@@ -66,6 +66,16 @@ def test_openai_budget_is_a_documented_manual_step() -> None:
     assert "US$ 5" in text
     assert "manual step" in text
     assert "month" in text.lower()
+
+
+def test_local_compose_serves_the_space_image_on_port_7860() -> None:
+    text = (_ROOT / "compose.yaml").read_text(encoding="utf-8")
+
+    assert "dockerfile: Dockerfile" in text
+    assert '"7860:7860"' in text
+    assert "env_file: .env" in text
+    assert "volumes:" not in text
+    assert text.count("build:") == 1
 
 
 def _workflow(name: str) -> str:
