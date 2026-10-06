@@ -6,7 +6,6 @@ import base64
 import io
 from typing import cast
 
-import pypdfium2 as pdfium  # type: ignore[import-untyped]
 from openai.lib._parsing import type_to_response_format_param
 from openai.types.responses import EasyInputMessageParam
 from openai.types.responses.response_format_text_json_schema_config_param import (
@@ -21,7 +20,10 @@ from openai.types.responses.response_text_config_param import ResponseTextConfig
 from openai.types.shared_params.response_format_json_schema import (
     ResponseFormatJSONSchema,
 )
+from PIL import Image
 from pydantic import BaseModel
+
+from nfe_document_extraction.pdfium import open_pdf
 
 MAX_OUTPUT_TOKENS = 16_000
 RENDER_SCALE = 2
@@ -29,20 +31,21 @@ RENDER_SCALE = 2
 
 def render_pdf_pages(pdf: bytes) -> tuple[bytes, ...]:
     """Rasterize each PDF page to a PNG so the model sees the page, not the text layer."""
-    document = pdfium.PdfDocument(pdf)
-    pages: list[bytes] = []
-    try:
+    images: list[Image.Image] = []
+    with open_pdf(pdf) as document:
         for index in range(len(document)):
             page = document[index]
             bitmap = page.render(scale=RENDER_SCALE)
-            image = bitmap.to_pil()
-            buffer = io.BytesIO()
-            image.convert("RGB").save(buffer, format="PNG")
-            pages.append(buffer.getvalue())
-            bitmap.close()
-            page.close()
-    finally:
-        document.close()
+            try:
+                images.append(bitmap.to_pil().convert("RGB"))
+            finally:
+                bitmap.close()
+                page.close()
+    pages: list[bytes] = []
+    for image in images:
+        buffer = io.BytesIO()
+        image.save(buffer, format="PNG")
+        pages.append(buffer.getvalue())
     return tuple(pages)
 
 

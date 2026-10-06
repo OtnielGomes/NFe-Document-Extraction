@@ -9,8 +9,9 @@ from __future__ import annotations
 import io
 import random
 
-import pypdfium2 as pdfium  # type: ignore[import-untyped]
 from PIL import Image, ImageChops, ImageFilter
+
+from nfe_document_extraction.pdfium import open_pdf
 
 PHOTO_RENDER_SCALE = 2
 _PERSPECTIVE_MARGIN = 0.07
@@ -25,22 +26,21 @@ _NOISE_SCALE = 16
 def simulate_photo_pages(pdf: bytes, *, seed: int) -> tuple[bytes, ...]:
     """Degrade every page of a digital DANFE into one Simulated-photo JPEG."""
     rng = random.Random(seed)
-    document = pdfium.PdfDocument(pdf)
-    pages: list[bytes] = []
-    try:
+    rendered: list[tuple[random.Random, Image.Image]] = []
+    with open_pdf(pdf) as document:
         for index in range(len(document)):
             page_rng = random.Random(rng.randrange(2**32))
-            image = _render(document[index])
-            image = _perspective(image, page_rng)
-            image = image.filter(
-                ImageFilter.GaussianBlur(radius=page_rng.uniform(*_BLUR_RADIUS))
-            )
-            image = _shadow(image, page_rng)
-            image = _jpeg_roundtrip(image, page_rng.randint(*_JPEG_QUALITY))
-            image = _noise(image, page_rng)
-            pages.append(_encode_jpeg(image))
-    finally:
-        document.close()
+            rendered.append((page_rng, _render(document[index])))
+    pages: list[bytes] = []
+    for page_rng, image in rendered:
+        image = _perspective(image, page_rng)
+        image = image.filter(
+            ImageFilter.GaussianBlur(radius=page_rng.uniform(*_BLUR_RADIUS))
+        )
+        image = _shadow(image, page_rng)
+        image = _jpeg_roundtrip(image, page_rng.randint(*_JPEG_QUALITY))
+        image = _noise(image, page_rng)
+        pages.append(_encode_jpeg(image))
     return tuple(pages)
 
 

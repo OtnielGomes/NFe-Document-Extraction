@@ -8,7 +8,6 @@ from dataclasses import dataclass
 from datetime import date
 from pathlib import Path
 
-import pypdfium2 as pdfium  # type: ignore[import-untyped]
 from PIL import Image
 
 from nfe_document_extraction.app.service import document_payload
@@ -18,6 +17,7 @@ from nfe_document_extraction.evaluation.dataset import (
     SIMULATED_PHOTO,
     SIMULATED_PHOTO_DIRECTORY,
 )
+from nfe_document_extraction.pdfium import open_pdf
 from nfe_document_extraction.validation import validate
 from nfe_document_extraction.validation.report import DocumentOutcome, ValidationReport
 
@@ -104,8 +104,7 @@ def _jpeg(data: bytes) -> Image.Image:
 
 
 def _pdf_preview(pdf: bytes) -> Image.Image:
-    document = pdfium.PdfDocument(pdf)
-    try:
+    with open_pdf(pdf) as document:
         page = document[0]
         bitmap = page.render(scale=_PREVIEW_SCALE)
         try:
@@ -113,5 +112,3 @@ def _pdf_preview(pdf: bytes) -> Image.Image:
         finally:
             bitmap.close()
             page.close()
-    finally:
-        document.close()

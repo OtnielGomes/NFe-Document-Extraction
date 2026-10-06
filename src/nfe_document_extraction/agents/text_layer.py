@@ -2,19 +2,19 @@
 
 from __future__ import annotations
 
-import pypdfium2 as pdfium  # type: ignore[import-untyped]
 from openai.types.responses import EasyInputMessageParam
 from openai.types.responses.response_input_message_content_list_param import (
     ResponseInputContentParam,
 )
 from openai.types.responses.response_input_text_param import ResponseInputTextParam
 
+from nfe_document_extraction.pdfium import open_pdf
+
 
 def extract_pdf_text(pdf: bytes) -> str:
     """Read each page's text layer, in order."""
-    document = pdfium.PdfDocument(pdf)
     pages: list[str] = []
-    try:
+    with open_pdf(pdf) as document:
         for index in range(len(document)):
             page = document[index]
             text_page = page.get_textpage()
@@ -23,8 +23,6 @@ def extract_pdf_text(pdf: bytes) -> str:
             finally:
                 text_page.close()
                 page.close()
-    finally:
-        document.close()
     return "\n\n".join(pages)
 
 

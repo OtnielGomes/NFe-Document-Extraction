@@ -4,10 +4,9 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-import pypdfium2 as pdfium  # type: ignore[import-untyped]
-
 from nfe_document_extraction.app.errors import RequestRejected
 from nfe_document_extraction.app.limits import CostLimits
+from nfe_document_extraction.pdfium import open_pdf
 
 TOO_MANY_PAGES = "This document has {count} pages, which is over the limit of {limit}."
 HEIC_NOT_ACCEPTED = (
@@ -82,15 +81,10 @@ def _declared_heic(filename: str | None, content_type: str | None) -> bool:
 
 def _reject_long_pdf(data: bytes, max_pages: int) -> None:
     try:
-        document = pdfium.PdfDocument(data)
+        with open_pdf(data) as document:
+            count = len(document)
     except Exception as exc:
         raise RequestRejected(UNREADABLE_PDF, 400) from exc
-    try:
-        count = len(document)
-    except Exception as exc:
-        raise RequestRejected(UNREADABLE_PDF, 400) from exc
-    finally:
-        document.close()
     if count < 1:
         raise RequestRejected(UNREADABLE_PDF, 400)
     if count > max_pages:
