@@ -27,6 +27,7 @@ from nfe_document_extraction.graph import (
     run_document,
     submit_human_review,
 )
+from nfe_document_extraction.validation.report import DocumentOutcome, ValidationReport
 
 UNREADABLE_DOCUMENT = "The document could not be read."
 NO_REVIEW = "No document is waiting for review on this thread."
@@ -143,9 +144,25 @@ def _document_body(run: GraphRun) -> dict[str, object]:
     outcome = run.outcome
     if extraction is None or report is None or outcome is None:
         raise RequestRejected(UNREADABLE_DOCUMENT, 422)
+    return document_payload(
+        extraction,
+        report,
+        outcome=outcome,
+        thread_id=run.thread_id if run.awaiting_human_review else None,
+    )
+
+
+def document_payload(
+    extraction: Extraction,
+    report: ValidationReport,
+    *,
+    outcome: DocumentOutcome,
+    thread_id: str | None,
+) -> dict[str, object]:
+    """The document JSON the API and the demo UI both return."""
     return {
         "outcome": outcome.value,
-        "thread_id": run.thread_id if run.awaiting_human_review else None,
+        "thread_id": thread_id,
         "extraction": extraction.model_dump(mode="json"),
         "fields": [
             {

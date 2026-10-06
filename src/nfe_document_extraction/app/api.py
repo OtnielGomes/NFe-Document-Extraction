@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from collections.abc import Callable
+from collections.abc import Callable, Sequence
 from datetime import UTC, date, datetime
 from typing import Any
 
@@ -13,6 +13,7 @@ from pydantic import BaseModel, ConfigDict
 from nfe_document_extraction.agents.config import CHEAP_VISION, load_approach_config
 from nfe_document_extraction.agents.sections import SectionReader
 from nfe_document_extraction.app.errors import RequestRejected
+from nfe_document_extraction.app.gallery import GalleryItem
 from nfe_document_extraction.app.limits import CostLimits
 from nfe_document_extraction.app.monitoring import (
     DemoMonitor,
@@ -41,8 +42,13 @@ def create_app(
     limits: CostLimits | None = None,
     clock: Callable[[], date] | None = None,
     price: TokenPrice | None = None,
+    gallery: Sequence[GalleryItem] | None = None,
 ) -> FastAPI:
-    """FastAPI app over the document graph. Tracing of model calls stays off."""
+    """FastAPI app over the document graph. Tracing of model calls stays off.
+
+    When ``gallery`` is set, the Gradio page is mounted at ``/`` after the
+    JSON routes, and both share this process's extraction service.
+    """
     silence_automatic_traces()
     service = ExtractionService(
         reader,
@@ -77,6 +83,13 @@ def create_app(
     def review(thread_id: str, body: ReviewBody) -> JSONResponse:
         return JSONResponse(service.submit_review(thread_id, body.edits))
 
+    if gallery is not None:
+        from nfe_document_extraction.app.ui import DemoActions, mount_demo
+
+        actions = DemoActions(service, gallery)
+        app.state.demo_actions = actions
+        mount_demo(app, actions)
+
     return app
 
 
@@ -84,14 +97,14 @@ def build_demo_app() -> FastAPI:
     """Cheap-vision section agents behind the public limits."""
     from pathlib import Path
 
-    from openai import OpenAI
-
     from nfe_document_extraction.agents.sections import VisionSectionReader
+    from nfe_document_extraction.app.gallery import load_gallery
     from nfe_document_extraction.env import load_env_file
 
     load_env_file(Path(".env"))
-    reader = VisionSectionReader(OpenAI(), load_approach_config(CHEAP_VISION))
-    return create_app(reader)
+    reader = VisionSectionReader(_openai_client(), load_approach_config(CHEAP_VISION))
+    today = _utc_today()
+    return create_app(reader, gallery=load_gallery(Path("data/synthetic"), today=today))
 
 
 def client_ip(request: Request) -> str:
@@ -102,15 +115,33 @@ def client_ip(request: Request) -> str:
     or a client-then-proxy chain. A direct call has no header, so the
     socket peer is used.
     """
-    forwarded = request.headers.get("x-forwarded-for", "")
+    client = request.client
+    peer = client.host if client is not None and client.host else None
+    return visitor_ip(request.headers.get("x-forwarded-for"), peer)
+
+
+def visitor_ip(forwarded_for: str | None, peer: str | None) -> str:
+    """Left-most forwarded address, otherwise the socket peer."""
+    forwarded = forwarded_for or ""
     if forwarded.strip():
         first = forwarded.split(",")[0].strip()
         if first:
             return first
-    client = request.client
-    if client is not None and client.host:
-        return client.host
+    if peer:
+        return peer
     return "unknown"
+
+
+def _openai_client() -> object:
+    """The demo client. A missing key still lets the cached gallery start."""
+    import os
+
+    from openai import OpenAI
+
+    key = os.environ.get("OPENAI_API_KEY", "").strip()
+    if key:
+        return OpenAI(api_key=key)
+    return OpenAI(api_key="missing")
 
 
 def _utc_today() -> date:
