@@ -1,6 +1,6 @@
 # Deploy and the manual LLM eval
 
-Pushes to `main` run `.github/workflows/checks.yml`. When that run succeeds, `.github/workflows/deploy-space.yml` publishes the container to a Hugging Face Docker Space on free CPU (`cpu-basic`). Free CPU sleeps after 48 hours of inactivity and starts again when someone opens the Space. The gallery is cached in the image, so that wake does not call a model.
+Pushes to `main` run `.github/workflows/checks.yml`. When that run succeeds, `.github/workflows/deploy-space.yml` publishes the container to a Hugging Face Docker Space on free CPU (`cpu-basic`). Deploys run one at a time. A run publishes only when its commit is still the tip of `main`, so an older green check cannot replace a newer one. Free CPU sleeps after 48 hours of inactivity and starts again when someone opens the Space. The gallery is cached in the image, so that wake does not call a model.
 
 The Space README (title, `sdk: docker`, `app_port: 7860`) is written at publish time. The repository README is still written last, with the case study.
 

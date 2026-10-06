@@ -42,6 +42,10 @@ def test_space_deploys_only_after_checks_succeed_on_main() -> None:
     )
     assert "github.event.workflow_run.head_sha" in text
     assert "scripts/deploy_space.py" in text
+    assert "cancel-in-progress: false" in text
+    assert "git fetch origin main" in text
+    assert "git rev-parse origin/main" in text
+    assert "steps.tip.outputs.current == 'true'" in text
     assert "secrets.HF_TOKEN" in text
     assert "secrets.HF_SPACE_ID" in text
     assert "secrets.OPENAI_API_KEY" in text

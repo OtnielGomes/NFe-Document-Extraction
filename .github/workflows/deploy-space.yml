@@ -30,7 +30,20 @@ jobs:
         with:
           version: "0.11.18"
 
+      - name: Deploy only the tip of main
+        id: tip
+        run: |
+          git fetch origin main
+          tip="$(git rev-parse origin/main)"
+          if [ "$tip" = "${{ github.event.workflow_run.head_sha }}" ]; then
+            echo "current=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "current=false" >> "$GITHUB_OUTPUT"
+            echo "Skipping publish of ${{ github.event.workflow_run.head_sha }}; main is $tip"
+          fi
+
       - name: Publish the Docker Space
+        if: steps.tip.outputs.current == 'true'
         env:
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
           HF_SPACE_ID: ${{ secrets.HF_SPACE_ID }}
