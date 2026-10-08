@@ -40,6 +40,7 @@ class BaselineReading:
     cached_input_tokens: int
     output_tokens: int
     latency_seconds: float
+    cache_write_tokens: int = 0
 
 
 def extract_baseline(
@@ -70,7 +71,9 @@ def extract_baseline(
         store=False,
     )
     latency = time.perf_counter() - started
-    input_tokens, cached_input_tokens, output_tokens = response_usage(response)
+    input_tokens, cached_input_tokens, output_tokens, cache_write_tokens = (
+        response_usage(response)
+    )
     extraction, failure = interpret_baseline_output(
         _parse_output(getattr(response, "output_text", None)),
         response_refusal(response),
@@ -82,6 +85,7 @@ def extract_baseline(
         cached_input_tokens=cached_input_tokens,
         output_tokens=output_tokens,
         latency_seconds=latency,
+        cache_write_tokens=cache_write_tokens,
     )
 
 

@@ -8,7 +8,7 @@ from pathlib import Path
 import pytest
 from langgraph.checkpoint.memory import InMemorySaver
 from langgraph.checkpoint.sqlite import SqliteSaver
-from test_identifier_rules import ISSUER_CNPJ, _extraction, _line_item
+from test_identifier_rules import ACCESS_KEY, ISSUER_CNPJ, _extraction, _line_item
 
 from nfe_document_extraction.agents.sections import (
     RepairFieldNote,
@@ -70,6 +70,7 @@ def test_the_graph_routes_in_code_without_a_supervisor() -> None:
         "validate_after_repair",
         "human_review",
         "apply_human_edits",
+        "reject_document",
     } <= names
     assert not any("supervisor" in name or "reconcil" in name for name in names)
 
@@ -109,6 +110,42 @@ def test_simulated_photo_pages_reach_the_first_read_and_the_repair() -> None:
     assert len(reader.requests) == 3
     assert all(request.pages == pages for request in reader.requests)
     assert any(request.notes for request in reader.requests)
+
+
+def test_an_empty_access_key_rejects_the_document_without_repair_or_review() -> None:
+    invoice = _extraction(access_key="")
+    reader = _reader(_queues(invoice))
+
+    run = run_document(reader, _PDF, today=_TODAY)
+
+    assert run.rejected is True
+    assert run.outcome is None
+    assert run.report is None
+    assert run.repair_attempted is False
+    assert run.awaiting_human_review is False
+    assert run.extraction is not None
+    assert run.extraction.header.access_key == ""
+    assert len(reader.requests) == 2
+    assert all(request.notes == () for request in reader.requests)
+
+
+def test_a_non_empty_invalid_access_key_still_goes_to_repair() -> None:
+    broken = _extraction(access_key=ACCESS_KEY[:-1] + "1")
+    fixed = _extraction()
+    reader = _reader(
+        {
+            Section.HEADER: [_header(broken.header), _header(fixed.header)],
+            Section.LINE_ITEMS: [_items(fixed.line_items)],
+        }
+    )
+
+    run = run_document(reader, _PDF, today=_TODAY)
+
+    assert run.rejected is False
+    assert run.repair_attempted is True
+    assert run.outcome is DocumentOutcome.ACCEPTED
+    assert run.awaiting_human_review is False
+    assert [request.section for request in reader.requests].count(Section.HEADER) == 2
 
 
 def test_a_header_failure_is_repaired_only_by_the_header_agent() -> None:

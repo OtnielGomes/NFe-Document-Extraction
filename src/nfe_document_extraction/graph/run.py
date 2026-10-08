@@ -40,6 +40,7 @@ class TokenUsage:
     input_tokens: int = 0
     cached_input_tokens: int = 0
     output_tokens: int = 0
+    cache_write_tokens: int = 0
 
 
 class _CompiledGraph(Protocol):
@@ -104,6 +105,7 @@ class DocumentState(TypedDict, total=False):
     pending_edits: dict[str, object]
     rejected_fields: tuple[str, ...]
     human_fields: tuple[str, ...]
+    document_rejected: bool
 
 
 @dataclass(frozen=True)
@@ -124,6 +126,8 @@ class GraphRun:
     thread_id: str | None = None
     awaiting_human_review: bool = False
     human_fields: tuple[str, ...] = ()
+    rejected: bool = False
+    cache_write_tokens: int = 0
 
 
 def run_document(
@@ -224,6 +228,7 @@ def compile_document_graph(
     builder.add_node("read_header", read_header)
     builder.add_node("read_line_items", read_line_items)
     builder.add_node("merge", _merge)
+    builder.add_node("reject_document", _reject_document)
     builder.add_node("validate", validate_first)
     builder.add_node("route_repair", _route_repair)
     builder.add_node("repair_header", repair_header)
@@ -235,7 +240,8 @@ def compile_document_graph(
     builder.add_edge(START, "read_header")
     builder.add_edge(START, "read_line_items")
     builder.add_edge(["read_header", "read_line_items"], "merge")
-    builder.add_edge("merge", "validate")
+    builder.add_conditional_edges("merge", _route_after_first_merge)
+    builder.add_edge("reject_document", END)
     builder.add_conditional_edges("validate", _route_after_validation)
     builder.add_edge("route_repair", "repair_header")
     builder.add_edge("route_repair", "repair_line_items")
@@ -378,6 +384,24 @@ def _validate(
     if record_initial:
         return {"report": report, "initial_report": report}
     return {"report": report}
+
+
+def _missing_access_key(state: DocumentState) -> bool:
+    """True when the header agent read the document and found no access key."""
+    if state.get("header_failure") is not None:
+        return False
+    header = state.get("header")
+    return isinstance(header, Header) and header.access_key == ""
+
+
+def _route_after_first_merge(state: DocumentState) -> str:
+    if _missing_access_key(state):
+        return "reject_document"
+    return "validate"
+
+
+def _reject_document(_state: DocumentState) -> dict[str, object]:
+    return {"document_rejected": True}
 
 
 def _route_after_validation(state: DocumentState) -> str:
@@ -530,7 +554,9 @@ def _graph_run(
     resolved_report = report if isinstance(report, ValidationReport) else None
     resolved_initial = initial if isinstance(initial, ValidationReport) else None
     resolved_failure = failure if isinstance(failure, ExtractionFailure) else None
-    input_tokens, cached_input_tokens, output_tokens = _tokens(state)
+    input_tokens, cached_input_tokens, output_tokens, cache_write_tokens = _tokens(
+        state
+    )
     human_fields = state.get("human_fields", ())
     return GraphRun(
         outcome=_public_outcome(
@@ -551,6 +577,8 @@ def _graph_run(
         thread_id=thread_id,
         awaiting_human_review=bool(state.get("__interrupt__")),
         human_fields=human_fields if isinstance(human_fields, tuple) else (),
+        rejected=bool(state.get("document_rejected", False)),
+        cache_write_tokens=cache_write_tokens,
     )
 
 
@@ -574,10 +602,11 @@ def _flagged(report: ValidationReport | None) -> tuple[str, ...]:
     )
 
 
-def _tokens(state: Mapping[str, object]) -> tuple[int, int, int]:
+def _tokens(state: Mapping[str, object]) -> tuple[int, int, int, int]:
     incoming = 0
     cached = 0
     outgoing = 0
+    cache_writes = 0
     for key in (
         "header_usage",
         "line_items_usage",
@@ -589,7 +618,8 @@ def _tokens(state: Mapping[str, object]) -> tuple[int, int, int]:
             incoming += usage.input_tokens
             cached += usage.cached_input_tokens
             outgoing += usage.output_tokens
-    return incoming, cached, outgoing
+            cache_writes += usage.cache_write_tokens
+    return incoming, cached, outgoing, cache_writes
 
 
 def _prefer_failure(
@@ -674,4 +704,5 @@ def _usage(reading: SectionReading) -> TokenUsage:
         input_tokens=reading.input_tokens,
         cached_input_tokens=reading.cached_input_tokens,
         output_tokens=reading.output_tokens,
+        cache_write_tokens=reading.cache_write_tokens,
     )

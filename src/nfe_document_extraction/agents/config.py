@@ -16,6 +16,7 @@ SINGLE_CALL_BASELINE = "single-call baseline"
 CHEAP_VISION = "cheap vision"
 STRONG_VISION = "strong vision"
 TEXT_LAYER = "text layer + text model"
+LUNA_MODEL = "gpt-6-luna"
 
 BASELINE_MODEL_ENV = "NFE_BASELINE_MODEL"
 CHEAP_VISION_MODEL_ENV = "NFE_CHEAP_VISION_MODEL"
@@ -40,6 +41,7 @@ class ApproachConfig:
     input_usd_per_million: Decimal
     cached_input_usd_per_million: Decimal
     output_usd_per_million: Decimal
+    cache_write_usd_per_million: Decimal = Decimal(0)
 
 
 def load_approach_config(approach: str) -> ApproachConfig:
@@ -70,6 +72,9 @@ def load_approach_config(approach: str) -> ApproachConfig:
             str(priced["cached_input_usd_per_million"])
         ),
         output_usd_per_million=Decimal(str(priced["output_usd_per_million"])),
+        cache_write_usd_per_million=Decimal(
+            str(priced.get("cache_write_usd_per_million", "0"))
+        ),
     )
 
 
@@ -90,7 +95,7 @@ def _approach_row(payload: dict[str, Any], approach: str) -> dict[str, Any]:
 
 
 def _model_row(payload: dict[str, Any], model: str) -> dict[str, Any] | None:
-    for row in payload["approaches"]:
+    for row in (*payload["approaches"], *payload.get("models", ())):
         if row["model"] == model:
             return cast(dict[str, Any], row)
     return None

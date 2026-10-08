@@ -31,6 +31,7 @@ class InvoiceEvaluation:
     latency_seconds: float
     repaired: bool = False
     reached_human_review: bool = False
+    rejected: bool = False
 
 
 @dataclass(frozen=True)
@@ -53,6 +54,7 @@ class ResultRow:
     planted_detection_rate: Decimal | None
     extraction_failures: int
     applicable: bool = True
+    clean_documents_rejected: int = 0
 
 
 def not_applicable_row(approach: str, rendition: str, origin: str) -> ResultRow:
@@ -131,6 +133,7 @@ def _row(key: tuple[str, str, str], invoices: Sequence[InvoiceEvaluation]) -> Re
         extraction_failures=sum(
             invoice.extraction_failure is not None for invoice in invoices
         ),
+        clean_documents_rejected=sum(invoice.rejected for invoice in clean),
     )
 
 

@@ -9,6 +9,8 @@ from pypdf import PdfWriter
 from test_identifier_rules import ACCESS_KEY, ISSUER_CNPJ, RECIPIENT_CPF
 
 from nfe_document_extraction.agents.config import (
+    CHEAP_VISION,
+    CHEAP_VISION_MODEL_ENV,
     STRONG_VISION,
     TEXT_LAYER,
     load_approach_config,
@@ -107,6 +109,8 @@ def test_header_agent_sends_its_repository_prompt_and_the_pinned_snapshot() -> N
     assert reading.input_tokens == 11
     assert reading.output_tokens == 7
     assert client.responses.kwargs["model"] == "gpt-4.1-2025-04-14"
+    assert client.responses.kwargs["temperature"] == 0
+    assert "reasoning" not in client.responses.kwargs
     assert client.responses.kwargs["instructions"] == (
         _PROMPTS / "header.md"
     ).read_text(encoding="utf-8")
@@ -123,6 +127,45 @@ def test_header_agent_sends_its_repository_prompt_and_the_pinned_snapshot() -> N
         "input_image",
     ]
     assert parts[1]["detail"] == "high"
+
+
+def test_cheap_vision_on_gpt_6_luna_sends_reasoning_effort_none_and_temperature_zero(
+    monkeypatch,
+) -> None:
+    monkeypatch.setenv(CHEAP_VISION_MODEL_ENV, "gpt-6-luna")
+    client = _Client()
+    reader = VisionSectionReader(client, load_approach_config(CHEAP_VISION))  # type: ignore[arg-type]
+
+    reader.read(
+        SectionRequest(
+            section=Section.HEADER,
+            document=b"not a pdf",
+            pages=(b"\xff\xd8\xff\x00",),
+        )
+    )
+
+    assert client.responses.kwargs["model"] == "gpt-6-luna"
+    assert client.responses.kwargs["temperature"] == 0
+    assert client.responses.kwargs["reasoning"] == {"effort": "none"}
+
+
+def test_vision_reader_records_cache_write_tokens() -> None:
+    client = _Client()
+    client.responses.create = _cache_write_response  # type: ignore[method-assign]
+    reader = VisionSectionReader(client, load_approach_config(CHEAP_VISION))  # type: ignore[arg-type]
+
+    reading = reader.read(
+        SectionRequest(
+            section=Section.HEADER,
+            document=b"not a pdf",
+            pages=(b"\xff\xd8\xff\x00",),
+        )
+    )
+
+    assert reading.input_tokens == 20
+    assert reading.cached_input_tokens == 3
+    assert reading.cache_write_tokens == 9
+    assert reading.output_tokens == 4
 
 
 def test_vision_agent_reads_simulated_photo_pages() -> None:
@@ -147,6 +190,39 @@ def test_vision_agent_reads_simulated_photo_pages() -> None:
     assert parts[1]["detail"] == "high"
 
 
+def test_vision_prompts_are_structured_and_the_other_prompts_stay_plain() -> None:
+    header = (_PROMPTS / "header.md").read_text(encoding="utf-8")
+    items = (_PROMPTS / "line_items.md").read_text(encoding="utf-8")
+    for prompt in (header, items):
+        for tag in (
+            "role",
+            "document_context",
+            "reading_procedure",
+            "rules",
+            "fields",
+            "repair_notes",
+        ):
+            assert f"<{tag}>" in prompt
+            assert f"</{tag}>" in prompt
+        assert "1.234,56" in prompt
+        assert "data from the page" in prompt
+        assert "Do not calculate a replacement" in prompt
+    assert "empty access_key" in header
+    assert "dd/mm/yyyy" in header
+    assert "totals box" in header
+    assert "wrap" in items
+    assert "continuation pages" in items
+    unchanged = (
+        (_PROMPTS / "single_call_baseline.md").read_text(encoding="utf-8"),
+        (_PROMPTS / "header_text.md").read_text(encoding="utf-8"),
+        (_PROMPTS / "line_items_text.md").read_text(encoding="utf-8"),
+    )
+    assert all("<role>" not in prompt for prompt in unchanged)
+    assert unchanged[0].startswith("Read the DANFE in the images.")
+    assert unchanged[1].startswith("Read the DANFE in the text.")
+    assert unchanged[2].startswith("Read the DANFE in the text.")
+
+
 def test_line_items_repair_sends_the_failing_fields_and_the_same_message() -> None:
     client = _Client()
     reader = VisionSectionReader(client, load_approach_config(STRONG_VISION))  # type: ignore[arg-type]
@@ -167,11 +243,12 @@ def test_line_items_repair_sends_the_failing_fields_and_the_same_message() -> No
 
     instructions = client.responses.kwargs["instructions"]
     assert isinstance(instructions, str)
-    prompt = (_PROMPTS / "line_items.md").read_text(encoding="utf-8")
-    assert instructions.startswith(prompt.rstrip())
-    assert "line_items[0].item_total" in instructions
-    assert message in instructions
-    assert "Do not calculate a replacement" in instructions
+    before, after = instructions.split("</repair_notes>", maxsplit=1)
+    assert "line_items[0].item_total" in before
+    assert message in before
+    assert "Do not calculate a replacement" in before
+    assert "line_items[0].item_total" not in after
+    assert "Return the value printed on the page." in before
     text_format = client.responses.kwargs["text"]
     assert isinstance(text_format, dict)
     assert text_format["format"]["name"] == "LineItemsSectionPayload"
@@ -322,6 +399,26 @@ def test_a_refusal_is_an_extraction_error() -> None:
 
     assert header is None
     assert failure is ExtractionFailure.REFUSAL
+
+
+def _cache_write_response(**kwargs: object) -> object:
+    del kwargs
+
+    class _Details:
+        cached_tokens = 3
+        cache_write_tokens = 9
+
+    class _Usage:
+        input_tokens = 20
+        output_tokens = 4
+        input_tokens_details = _Details()
+
+    class _Response:
+        output_text = "not json"
+        output = ()
+        usage = _Usage()
+
+    return _Response()
 
 
 def _schema_body(model: type[object]) -> dict[str, object]:

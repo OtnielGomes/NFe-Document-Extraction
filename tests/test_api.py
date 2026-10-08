@@ -430,6 +430,27 @@ def test_the_global_daily_upload_cap_is_shared_across_addresses() -> None:
     assert len(reader.requests) == calls
 
 
+def test_an_upload_with_no_access_key_is_not_a_danfe_and_its_cost_counts() -> None:
+    reader = ScriptedReader(
+        _extraction(access_key=""),
+        output_tokens=_OVER_CAP_OUTPUT_TOKENS,
+    )
+
+    with _client(reader) as client:
+        rejected = _upload(client, _pdf(1), "invoice.pdf", "application/pdf")
+        calls = len(reader.requests)
+        blocked = _upload(client, _pdf(1), "invoice.pdf", "application/pdf")
+
+    assert rejected.status_code == 422
+    assert rejected.json()["detail"] == "This document does not look like a DANFE."
+    assert blocked.status_code == 429
+    assert blocked.json()["detail"] == (
+        "The demo has reached its daily spend limit. Try again tomorrow."
+    )
+    assert calls == 2
+    assert len(reader.requests) == calls
+
+
 def test_estimated_spend_from_the_pricing_table_stops_the_next_upload() -> None:
     reader = ScriptedReader(_extraction(), output_tokens=_OVER_CAP_OUTPUT_TOKENS)
     monitor = RecordingMonitor()

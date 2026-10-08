@@ -11,7 +11,7 @@ from openai import OpenAI
 from openai.types.responses import EasyInputMessageParam
 from pydantic import BaseModel, ValidationError
 
-from nfe_document_extraction.agents.config import ApproachConfig
+from nfe_document_extraction.agents.config import LUNA_MODEL, ApproachConfig
 from nfe_document_extraction.agents.schema import (
     HeaderPayload,
     LineItemsSectionPayload,
@@ -75,6 +75,7 @@ class SectionReading:
     input_tokens: int = 0
     cached_input_tokens: int = 0
     output_tokens: int = 0
+    cache_write_tokens: int = 0
 
 
 class SectionReader(Protocol):
@@ -175,17 +176,11 @@ def _complete(
 ) -> SectionReading:
     schema = _schema(request.section)
     response = client.responses.create(
-        model=config.model,
-        instructions=_instructions(
-            request.section, request.notes, text_layer=text_layer
-        ),
-        input=[message],
-        text=strict_text_format(schema),
-        temperature=0,
-        max_output_tokens=MAX_OUTPUT_TOKENS,
-        store=False,
+        **_request_kwargs(config, request, message, schema, text_layer=text_layer)
     )
-    input_tokens, cached_input_tokens, output_tokens = response_usage(response)
+    input_tokens, cached_input_tokens, output_tokens, cache_write_tokens = (
+        response_usage(response)
+    )
     parsed = _parse(schema, getattr(response, "output_text", None))
     refusal = response_refusal(response)
     header, line_items, failure = _interpret(request.section, parsed, refusal)
@@ -197,7 +192,33 @@ def _complete(
         input_tokens=input_tokens,
         cached_input_tokens=cached_input_tokens,
         output_tokens=output_tokens,
+        cache_write_tokens=cache_write_tokens,
     )
+
+
+def _request_kwargs(
+    config: ApproachConfig,
+    request: SectionRequest,
+    message: EasyInputMessageParam,
+    schema: type[BaseModel],
+    *,
+    text_layer: bool,
+) -> dict[str, object]:
+    """Responses API arguments. Luna accepts temperature 0 only with effort none."""
+    kwargs: dict[str, object] = {
+        "model": config.model,
+        "instructions": _instructions(
+            request.section, request.notes, text_layer=text_layer
+        ),
+        "input": [message],
+        "text": strict_text_format(schema),
+        "temperature": 0,
+        "max_output_tokens": MAX_OUTPUT_TOKENS,
+        "store": False,
+    }
+    if config.model == LUNA_MODEL:
+        kwargs["reasoning"] = {"effort": "none"}
+    return kwargs
 
 
 def _schema(section: Section) -> type[BaseModel]:
@@ -225,6 +246,12 @@ def _instructions(
     prompt = _prompt(section, text_layer=text_layer)
     if not notes:
         return prompt
+    note_lines = "\n".join(
+        f"- {', '.join(note.fields)}: {note.message}" for note in notes
+    )
+    closing = "</repair_notes>"
+    if closing in prompt:
+        return prompt.replace(closing, f"{note_lines}\n{closing}", 1)
     lines = [
         prompt.rstrip(),
         "",

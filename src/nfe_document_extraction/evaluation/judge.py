@@ -29,6 +29,7 @@ def judge_reading(
     today: date | None = None,
     repaired: bool = False,
     reached_human_review: bool = False,
+    rejected: bool = False,
     initial_rules: Sequence[RuleReport] | None = None,
 ) -> InvoiceEvaluation:
     """Score a reading and record whether the validator caught an error.
@@ -43,17 +44,18 @@ def judge_reading(
     planted_error_detected = False
     if extraction is not None and extraction_failure is None:
         score = score_document(extraction, ground_truth)
-        rules = (
-            tuple(initial_rules)
-            if initial_rules is not None
-            else validate(extraction, today=today).rules
-        )
-        if planted_rule is None:
-            validator_caught_error = any(rule.failures for rule in rules)
-        else:
-            planted_error_detected = any(
-                rule.rule_id == planted_rule and rule.failures for rule in rules
+        if not rejected:
+            rules = (
+                tuple(initial_rules)
+                if initial_rules is not None
+                else validate(extraction, today=today).rules
             )
+            if planted_rule is None:
+                validator_caught_error = any(rule.failures for rule in rules)
+            else:
+                planted_error_detected = any(
+                    rule.rule_id == planted_rule and rule.failures for rule in rules
+                )
     return InvoiceEvaluation(
         approach=approach,
         rendition=rendition,
@@ -67,4 +69,5 @@ def judge_reading(
         latency_seconds=latency_seconds,
         repaired=repaired,
         reached_human_review=reached_human_review,
+        rejected=rejected,
     )

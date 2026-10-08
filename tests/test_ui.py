@@ -207,6 +207,18 @@ def test_review_keeps_money_when_the_shown_value_is_submitted() -> None:
     assert reviewed["extraction"]["line_items"][0]["item_total"] == 1_000
 
 
+def test_an_upload_with_no_access_key_says_it_is_not_a_danfe(tmp_path: Path) -> None:
+    reader = ScriptedReader(_extraction(access_key=""))
+    actions = DemoActions(_service(reader, RecordingMonitor()), ())
+
+    shown = present_upload(actions, _write_pdf(tmp_path), client_ip=_IP)
+
+    assert shown == {
+        "notice": "This document does not look like a DANFE.",
+        "body": None,
+    }
+
+
 def test_the_screen_shows_upload_rules_refusals_and_review_errors(
     tmp_path: Path,
 ) -> None:

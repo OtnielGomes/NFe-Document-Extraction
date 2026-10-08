@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import re
 from collections.abc import Sequence
 from decimal import ROUND_HALF_UP, Decimal
 
@@ -24,6 +25,7 @@ _COLUMNS = (
     "Errors reaching Human review",
     "Planted-error detection rate",
     "Extraction errors",
+    "Clean documents rejected",
 )
 
 
@@ -63,7 +65,9 @@ def render_results(
             "failing validation rule on the first reading. "
             "Errors fixed by repair counts clean documents accepted after the single "
             "Repair attempt. Errors reaching Human review counts clean documents whose "
-            "outcome is Human review. The single-call baseline does not repair."
+            "outcome is Human review. Clean documents rejected counts clean documents "
+            "whose reading found no access key: they are not repaired and do not reach "
+            "Human review. The single-call baseline does not repair."
         ),
         "",
         (
@@ -105,8 +109,144 @@ def _row(row: ResultRow) -> str:
         str(row.errors_reaching_human_review),
         _decimal(row.planted_detection_rate, "0.0001"),
         str(row.extraction_failures),
+        str(row.clean_documents_rejected),
     )
     return "| " + " | ".join(cells) + " |"
+
+
+_APPROACH_ORDER = (
+    "single-call baseline",
+    "cheap vision",
+    "strong vision",
+    "text layer + text model",
+)
+_RENDITION_ORDER = ("digital PDF", "simulated photo", "phone photo")
+_APPROACH_NAMES = frozenset(_APPROACH_ORDER)
+_SNAPSHOT = re.compile(
+    r"Model snapshot: `([^`]+)`\. Pricing table date: (\d{4}-\d{2}-\d{2})\."
+)
+
+
+def merge_preserved_approaches(existing: str, incoming: str, approach: str) -> str:
+    """Keep rows for every approach except ``approach``. ``incoming`` replaces it.
+
+    Older tables gain a zero (or ``n/a``) for columns they do not have yet.
+    The model snapshot keeps annotations for approaches that were not rerun.
+    """
+    existing_label, _existing_date = _snapshot_parts(existing)
+    incoming_label, _incoming_date = _snapshot_parts(incoming)
+    merged_label = _merge_snapshot_labels(existing_label, incoming_label, approach)
+    text = incoming.replace(f"`{incoming_label}`", f"`{merged_label}`", 1)
+    width = _header_width(text)
+    kept = [
+        _pad_row(row, width)
+        for row in _table_data_rows(existing)
+        if _row_approach(row) != approach
+    ]
+    fresh = [_pad_row(row, width) for row in _table_data_rows(incoming)]
+    rows = sorted([*kept, *fresh], key=_row_sort_key)
+    return _replace_table_body(text, rows)
+
+
+def _snapshot_parts(text: str) -> tuple[str, str]:
+    match = _SNAPSHOT.search(text)
+    if match is None:
+        raise ValueError("results file has no model snapshot")
+    return match.group(1), match.group(2)
+
+
+def _merge_snapshot_labels(existing: str, incoming: str, approach: str) -> str:
+    groups: list[tuple[str, list[str]]] = []
+    for model, tokens in _parse_snapshot(existing):
+        kept = [token for token in tokens if token != approach]
+        if any(token in _APPROACH_NAMES for token in kept):
+            groups.append((model, kept))
+    by_model = {model: tokens for model, tokens in groups}
+    order = [model for model, _tokens in groups]
+    for model, tokens in _parse_snapshot(incoming):
+        if model in by_model:
+            previous = [
+                token
+                for token in by_model[model]
+                if token in _APPROACH_NAMES and token != approach
+            ]
+            by_model[model] = [*previous, *tokens]
+        else:
+            order.append(model)
+            by_model[model] = tokens
+    return "; ".join(
+        f"{model} ({_format_snapshot_tokens(by_model[model])})" for model in order
+    )
+
+
+def _parse_snapshot(label: str) -> list[tuple[str, list[str]]]:
+    groups: list[tuple[str, list[str]]] = []
+    for part in label.split("; "):
+        model, _, rest = part.partition(" (")
+        inside = rest.removesuffix(")")
+        tokens = [token.strip() for token in inside.split(",") if token.strip()]
+        groups.append((model.strip(), tokens))
+    return groups
+
+
+def _format_snapshot_tokens(tokens: list[str]) -> str:
+    approaches = [name for name in _APPROACH_ORDER if name in tokens]
+    notes = [token for token in tokens if token not in _APPROACH_NAMES]
+    return ", ".join([*approaches, *notes])
+
+
+def _header_width(text: str) -> int:
+    for line in text.splitlines():
+        if line.startswith("| Extraction approach |"):
+            return len(_cells(line))
+    raise ValueError("results file has no evaluation table to update")
+
+
+def _pad_row(line: str, width: int) -> str:
+    cells = _cells(line)
+    if len(cells) > width:
+        cells = cells[:width]
+    if len(cells) < width:
+        metrics = cells[3:]
+        filler = "n/a" if metrics and all(cell == "n/a" for cell in metrics) else "0"
+        cells.extend([filler] * (width - len(cells)))
+    return "| " + " | ".join(cells) + " |"
+
+
+def _row_sort_key(line: str) -> tuple[int, int, str]:
+    cells = _cells(line)
+    approach = cells[0] if cells else ""
+    rendition = cells[1] if len(cells) > 1 else ""
+    origin = cells[2] if len(cells) > 2 else ""
+    approach_index = (
+        _APPROACH_ORDER.index(approach)
+        if approach in _APPROACH_NAMES
+        else len(_APPROACH_ORDER)
+    )
+    rendition_index = (
+        _RENDITION_ORDER.index(rendition)
+        if rendition in _RENDITION_ORDER
+        else len(_RENDITION_ORDER)
+    )
+    return approach_index, rendition_index, origin
+
+
+def _replace_table_body(text: str, rows: list[str]) -> str:
+    lines = text.splitlines()
+    header_index = next(
+        index
+        for index, line in enumerate(lines)
+        if line.startswith("| Extraction approach |")
+    )
+    body_start = header_index + 2
+    body_end = body_start
+    while body_end < len(lines) and lines[body_end].startswith("|"):
+        body_end += 1
+    merged = [*lines[:body_start], *rows, *lines[body_end:]]
+    rendered = "\n".join(merged)
+    if not rendered.endswith("\n"):
+        rendered += "\n"
+    return rendered
 
 
 _REAL_NOTE = (
@@ -157,8 +297,19 @@ def _table_data_rows(rendered: str) -> list[str]:
     return rows
 
 
+def _cells(line: str) -> list[str]:
+    return [cell.strip() for cell in line.strip().strip("|").split("|")]
+
+
+def _row_approach(line: str) -> str:
+    cells = _cells(line)
+    if not cells:
+        return ""
+    return cells[0]
+
+
 def _row_origin(line: str) -> str:
-    cells = [cell.strip() for cell in line.strip().strip("|").split("|")]
+    cells = _cells(line)
     if len(cells) < 3:
         return ""
     return cells[2]

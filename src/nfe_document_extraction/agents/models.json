@@ -1,5 +1,5 @@
 {
-  "pricing_as_of": "2026-10-03",
+  "pricing_as_of": "2026-10-08",
   "approaches": [
     {
       "approach": "single-call baseline",
@@ -28,6 +28,17 @@
       "input_usd_per_million": "0.40",
       "cached_input_usd_per_million": "0.10",
       "output_usd_per_million": "1.60"
+    }
+  ],
+  "models": [
+    {
+      "model": "gpt-6-luna",
+      "input_usd_per_million": "0.10",
+      "cached_input_usd_per_million": "0.01",
+      "output_usd_per_million": "0.50",
+      "cache_write_usd_per_million": "0.125",
+      "reasoning_effort": "none",
+      "api": "responses"
     }
   ]
 }

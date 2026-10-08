@@ -10,6 +10,7 @@ import argparse
 import os
 import sys
 from collections.abc import Callable, Sequence
+from datetime import UTC, date, datetime
 from pathlib import Path
 
 from langsmith import Client
@@ -18,6 +19,8 @@ from openai import OpenAI
 from nfe_document_extraction.agents.baseline import extract_baseline
 from nfe_document_extraction.agents.config import (
     CHEAP_VISION,
+    LUNA_MODEL,
+    SINGLE_CALL_BASELINE,
     STRONG_VISION,
     TEXT_LAYER,
     ApproachConfig,
@@ -53,6 +56,7 @@ from nfe_document_extraction.evaluation.metrics import (
     ResultRow,
     not_applicable_row,
 )
+from nfe_document_extraction.evaluation.results import merge_preserved_approaches
 from nfe_document_extraction.evaluation.tracing import resolve_tracing
 from nfe_document_extraction.graph import compile_document_graph, run_document
 from nfe_document_extraction.validation import DocumentOutcome
@@ -60,6 +64,12 @@ from nfe_document_extraction.validation import DocumentOutcome
 _ROOT = Path(__file__).resolve().parent.parent
 _SECTION_APPROACHES = (CHEAP_VISION, STRONG_VISION, TEXT_LAYER)
 _PHOTO_ROWS = (SIMULATED_PHOTO, PHONE_PHOTO)
+_APPROACH_FLAGS = {
+    "cheap-vision": CHEAP_VISION,
+    "strong-vision": STRONG_VISION,
+    "text-layer": TEXT_LAYER,
+    "single-call-baseline": SINGLE_CALL_BASELINE,
+}
 Progress = Callable[[str, str, int, int], None]
 
 
@@ -84,6 +94,15 @@ def main(argv: list[str] | None = None) -> int:
         help=(
             "Evaluate only the first N dataset examples. "
             "Examples are ordered by NF-e, digital PDF then simulated photo."
+        ),
+    )
+    parser.add_argument(
+        "--approach",
+        choices=tuple(_APPROACH_FLAGS),
+        default=None,
+        help=(
+            "Run one Extraction approach. Rows for approaches that are not run "
+            "stay in the results file with their previous numbers."
         ),
     )
     tracing_flags = parser.add_mutually_exclusive_group()
@@ -113,10 +132,7 @@ def main(argv: list[str] | None = None) -> int:
         )
         return 2
     try:
-        configs = (
-            load_baseline_config(),
-            *(load_approach_config(approach) for approach in _SECTION_APPROACHES),
-        )
+        configs = _configs(args.approach)
     except ValueError as exc:
         print(exc, file=sys.stderr)
         return 2
@@ -127,10 +143,22 @@ def main(argv: list[str] | None = None) -> int:
     client = _model_client(tracing.trace_models)
     scored = collect_evaluations(documents, client, configs)
     text = render_results(
-        _result_rows(tuple(evaluation for evaluation, _ in scored), documents),
+        _result_rows(
+            tuple(evaluation for evaluation, _ in scored),
+            documents,
+            include_text_layer_gaps=any(
+                config.approach == TEXT_LAYER for config in configs
+            ),
+        ),
         model_snapshot=snapshot_label(configs),
         pricing_as_of=configs[0].pricing_as_of.isoformat(),
     )
+    if args.approach is not None and args.output.is_file():
+        text = merge_preserved_approaches(
+            args.output.read_text(encoding="utf-8"),
+            text,
+            _APPROACH_FLAGS[args.approach],
+        )
     args.output.parent.mkdir(parents=True, exist_ok=True)
     args.output.write_text(text, encoding="utf-8")
     print(f"Wrote {args.output}", flush=True)
@@ -166,6 +194,17 @@ def wrap_openai(client: OpenAI) -> OpenAI:
     return _wrap(client)
 
 
+def _configs(approach: str | None) -> tuple[ApproachConfig, ...]:
+    ordered = (
+        load_baseline_config(),
+        *(load_approach_config(name) for name in _SECTION_APPROACHES),
+    )
+    if approach is None:
+        return ordered
+    selected = _APPROACH_FLAGS[approach]
+    return tuple(config for config in ordered if config.approach == selected)
+
+
 def collect_evaluations(
     documents: Sequence[DatasetExample],
     client: OpenAI,
@@ -173,13 +212,14 @@ def collect_evaluations(
     *,
     announce: Progress | None = None,
 ) -> tuple[tuple[InvoiceEvaluation, ScoredReading], ...]:
-    """Score the baseline, both vision approaches, and the text-layer approach."""
+    """Score each configured Extraction approach."""
     reporter = _announce_document if announce is None else announce
-    baseline, *section_configs = configs
     scored: list[tuple[InvoiceEvaluation, ScoredReading]] = []
-    scored.extend(_baseline(documents, client, baseline, reporter))
-    for config in section_configs:
-        scored.extend(_section_agents(documents, client, config, reporter))
+    for config in configs:
+        if config.approach == SINGLE_CALL_BASELINE:
+            scored.extend(_baseline(documents, client, config, reporter))
+        else:
+            scored.extend(_section_agents(documents, client, config, reporter))
     return tuple(scored)
 
 
@@ -220,6 +260,7 @@ def _baseline(
                         reading.cached_input_tokens,
                         reading.output_tokens,
                         config,
+                        cache_write_tokens=reading.cache_write_tokens,
                     ),
                     latency_seconds=reading.latency_seconds,
                 ),
@@ -233,9 +274,13 @@ def _baseline(
 def _result_rows(
     evaluations: Sequence[InvoiceEvaluation],
     documents: Sequence[DatasetExample],
+    *,
+    include_text_layer_gaps: bool,
 ) -> tuple[ResultRow, ...]:
     """Measured rows, plus photo rows the text-layer approach cannot run."""
     rows = list(summarize(evaluations))
+    if not include_text_layer_gaps:
+        return tuple(rows)
     origins = tuple(dict.fromkeys(document.origin for document in documents))
     for origin in origins:
         for rendition in _PHOTO_ROWS:
@@ -297,12 +342,14 @@ def _section_agents(
                         run.cached_input_tokens,
                         run.output_tokens,
                         config,
+                        cache_write_tokens=run.cache_write_tokens,
                     ),
                     latency_seconds=run.latency_seconds,
                     repaired=run.repair_attempted
                     and run.outcome is DocumentOutcome.ACCEPTED,
                     reached_human_review=run.outcome is DocumentOutcome.HUMAN_REVIEW,
-                    initial_rules=initial_rules,
+                    rejected=run.rejected,
+                    initial_rules=None if run.rejected else initial_rules,
                 ),
                 run.extraction,
                 run.extraction_failure,
@@ -329,13 +376,23 @@ def _scored(
     )
 
 
-def snapshot_label(configs: Sequence[ApproachConfig]) -> str:
+def snapshot_label(
+    configs: Sequence[ApproachConfig], *, run_on: date | None = None
+) -> str:
+    """Model ids for the results file. Luna records the run date and effort."""
     grouped: dict[str, list[str]] = {}
     for config in configs:
         grouped.setdefault(config.model, []).append(config.approach)
-    return "; ".join(
-        f"{model} ({', '.join(names)})" for model, names in grouped.items()
-    )
+    when = datetime.now(UTC).date() if run_on is None else run_on
+    parts: list[str] = []
+    for model, names in grouped.items():
+        label = ", ".join(names)
+        if model == LUNA_MODEL:
+            label = (
+                f"{label}, run {when.isoformat()}, reasoning effort none, Responses API"
+            )
+        parts.append(f"{model} ({label})")
+    return "; ".join(parts)
 
 
 if __name__ == "__main__":

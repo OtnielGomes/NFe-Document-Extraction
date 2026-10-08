@@ -375,11 +375,11 @@ def test_dated_pricing_table_converts_recorded_tokens_to_usd(monkeypatch) -> Non
     text_layer = load_approach_config(TEXT_LAYER)
 
     assert price.model == "gpt-4.1-mini-2025-04-14"
-    assert price.pricing_as_of == date(2026, 10, 3)
+    assert price.pricing_as_of == date(2026, 10, 8)
     assert cheap.model == price.model
     assert cheap.pricing_as_of == price.pricing_as_of
     assert strong.model == "gpt-4.1-2025-04-14"
-    assert strong.pricing_as_of == date(2026, 10, 3)
+    assert strong.pricing_as_of == date(2026, 10, 8)
     assert token_cost_usd(1_000_000, 0, 1_000_000, price) == Decimal("2.00")
     assert token_cost_usd(1_000_000, 500_000, 0, price) == Decimal("0.25")
     assert token_cost_usd(1_000_000, 0, 1_000_000, cheap) == Decimal("2.00")
@@ -387,8 +387,78 @@ def test_dated_pricing_table_converts_recorded_tokens_to_usd(monkeypatch) -> Non
     assert token_cost_usd(1_000_000, 500_000, 0, strong) == Decimal("1.25")
     assert text_layer.approach == "text layer + text model"
     assert text_layer.model == "gpt-4.1-mini-2025-04-14"
-    assert text_layer.pricing_as_of == date(2026, 10, 3)
+    assert text_layer.pricing_as_of == date(2026, 10, 8)
     assert token_cost_usd(1_000_000, 0, 1_000_000, text_layer) == Decimal("2.00")
+
+
+def test_gpt_6_luna_cache_writes_are_priced_and_unpriced_rows_bill_them_at_zero(
+    monkeypatch,
+) -> None:
+    monkeypatch.setenv(CHEAP_VISION_MODEL_ENV, "gpt-6-luna")
+    for name in (BASELINE_MODEL_ENV, STRONG_VISION_MODEL_ENV, TEXT_LAYER_MODEL_ENV):
+        monkeypatch.delenv(name, raising=False)
+
+    luna = load_approach_config(CHEAP_VISION)
+    mini = load_baseline_config()
+
+    assert luna.model == "gpt-6-luna"
+    assert luna.approach == "cheap vision"
+    assert luna.cache_write_usd_per_million == Decimal("0.125")
+    assert token_cost_usd(
+        1_000_000, 0, 0, luna, cache_write_tokens=1_000_000
+    ) == Decimal("0.125")
+    assert mini.cache_write_usd_per_million == Decimal(0)
+    assert token_cost_usd(
+        1_000_000, 0, 0, mini, cache_write_tokens=1_000_000
+    ) == Decimal(0)
+
+
+def test_clean_documents_rejected_exclude_planted_errors_and_validator_catches() -> (
+    None
+):
+    rejected = judge_reading(
+        approach="cheap vision",
+        rendition="digital PDF",
+        origin="synthetic",
+        ground_truth=_extraction(),
+        extraction=_extraction(access_key=""),
+        extraction_failure=None,
+        planted_rule=None,
+        cost_usd=Decimal("0.01"),
+        latency_seconds=1,
+        rejected=True,
+    )
+    planted = judge_reading(
+        approach="cheap vision",
+        rendition="digital PDF",
+        origin="synthetic",
+        ground_truth=_extraction(),
+        extraction=_extraction(access_key=""),
+        extraction_failure=None,
+        planted_rule="access_key_check_digit",
+        cost_usd=Decimal("0.01"),
+        latency_seconds=1,
+        rejected=True,
+    )
+
+    row = summarize((rejected, planted))[0]
+    text = render_results(
+        (row,),
+        model_snapshot="gpt-4.1-mini-2025-04-14",
+        pricing_as_of="2026-10-08",
+    )
+
+    assert rejected.rejected is True
+    assert rejected.validator_caught_error is False
+    assert rejected.reached_human_review is False
+    assert rejected.score is not None
+    assert planted.planted_error_detected is False
+    assert row.clean_documents_rejected == 1
+    assert row.validator_errors_caught == 0
+    assert row.errors_reaching_human_review == 0
+    assert row.planted_detection_rate == Decimal(0)
+    assert "Clean documents rejected" in text
+    assert "| 0 | 0 | 0.0000 | 0 | 1 |" in text
 
 
 def test_env_model_override_keeps_the_approach_and_uses_the_snapshot_price(

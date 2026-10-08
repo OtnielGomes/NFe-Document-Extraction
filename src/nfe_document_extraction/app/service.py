@@ -30,6 +30,7 @@ from nfe_document_extraction.graph import (
 from nfe_document_extraction.validation.report import DocumentOutcome, ValidationReport
 
 UNREADABLE_DOCUMENT = "The document could not be read."
+NOT_A_DANFE = "This document does not look like a DANFE."
 NO_REVIEW = "No document is waiting for review on this thread."
 INVALID_EDIT = "An edit is not a valid value for that field."
 
@@ -83,12 +84,15 @@ class ExtractionService:
                 run.cached_input_tokens,
                 run.output_tokens,
                 self._price,
+                cache_write_tokens=run.cache_write_tokens,
             )
             admission.add_spend(cost)
         trace = extraction_trace(run, cost)
         self._monitor.record_extraction(trace)
         if run.thread_id is not None and run.awaiting_human_review:
             self._trace_ids[run.thread_id] = trace.run_id
+        if run.rejected:
+            raise RequestRejected(NOT_A_DANFE, 422)
         if run.extraction is None or run.report is None or run.outcome is None:
             raise RequestRejected(UNREADABLE_DOCUMENT, 422)
         return _document_body(run)

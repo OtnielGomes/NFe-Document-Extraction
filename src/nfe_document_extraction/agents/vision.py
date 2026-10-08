@@ -77,17 +77,21 @@ def document_message(text: str, images: tuple[bytes, ...]) -> EasyInputMessagePa
     return {"role": "user", "content": content}
 
 
-def response_usage(response: object) -> tuple[int, int, int]:
-    """Input, cached input, and output tokens recorded on one response."""
+def response_usage(response: object) -> tuple[int, int, int, int]:
+    """Input, cached input, output, and cache-write tokens on one response."""
     usage = getattr(response, "usage", None)
     if usage is None:
-        return 0, 0, 0
+        return 0, 0, 0, 0
     details = getattr(usage, "input_tokens_details", None)
     cached = 0 if details is None else int(getattr(details, "cached_tokens", 0) or 0)
+    cache_write = (
+        0 if details is None else int(getattr(details, "cache_write_tokens", 0) or 0)
+    )
     return (
         int(getattr(usage, "input_tokens", 0) or 0),
         cached,
         int(getattr(usage, "output_tokens", 0) or 0),
+        cache_write,
     )
 
 
