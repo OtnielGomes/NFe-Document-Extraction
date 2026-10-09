@@ -288,6 +288,12 @@ def test_a_failed_feedback_write_keeps_the_result_and_says_so(tmp_path: Path) ->
     assert still["notice"] == "This document does not look like a DANFE."
     assert still["body"] is None
 
+    reviewed = present_review(actions, failed, {"header.issuer_cnpj": ISSUER_CNPJ})
+    assert reviewed.get("feedback_notice") is None
+    assert isinstance(reviewed["body"], dict)
+    assert reviewed["body"]["outcome"] == "accepted"
+    assert visitor_feedback_prompt(reviewed) == "Was this reading correct?"
+
 
 def test_the_document_payload_sent_to_the_browser_contains_no_trace_id(
     tmp_path: Path,

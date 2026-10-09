@@ -238,11 +238,17 @@ def present_review(
     result = actions.submit_review(thread_id, edits)
     if isinstance(result, Refusal):
         return _continue_screen(screen, notice=result.message, body=body)
-    return _continue_screen(screen, notice=None, body=result)
+    return _continue_screen(
+        screen, notice=None, body=result, keep_feedback_notice=False
+    )
 
 
 def _continue_screen(
-    screen: Mapping[str, object], *, notice: str | None, body: object
+    screen: Mapping[str, object],
+    *,
+    notice: str | None,
+    body: object,
+    keep_feedback_notice: bool = True,
 ) -> dict[str, object]:
     """A new screen that keeps the same extraction's feedback handle."""
     shown: dict[str, object] = {"notice": notice, "body": body}
@@ -252,6 +258,8 @@ def _continue_screen(
     kind = screen.get("feedback_kind")
     if kind in ("reading", "rejection"):
         shown["feedback_kind"] = kind
+    if not keep_feedback_notice:
+        return shown
     feedback_notice = screen.get("feedback_notice")
     if isinstance(feedback_notice, str) and feedback_notice:
         shown["feedback_notice"] = feedback_notice
