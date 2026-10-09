@@ -36,6 +36,7 @@ from nfe_document_extraction.app.ui import (
     language_chrome,
     present_upload,
     present_visitor_feedback,
+    render_result,
     screen_copy,
 )
 from nfe_document_extraction.app.uploads import (
@@ -350,6 +351,39 @@ def test_the_page_opens_in_portuguese_and_english_redraws_without_a_model(
     assert issuer_en.label == "Issuer CNPJ"
     assert issuer.value == issuer_en.value == "00000000000181"
     assert [row[2] for row in portuguese.rows] == [row[2] for row in selected.rows]
+
+
+def test_a_language_change_rebuilds_review_boxes(
+    tmp_path,
+) -> None:
+    actions = DemoActions(
+        _service(
+            ScriptedReader(_extraction(issuer_cnpj="00000000000181")),
+            RecordingMonitor(),
+        ),
+        (),
+    )
+    screen = present_upload(actions, _pdf_path(tmp_path), client_ip=_IP)
+    portuguese = _review_keys(actions, screen, "pt")
+    english = _review_keys(actions, screen, "en")
+    assert portuguese and english
+    assert {path for _, path in portuguese} == {path for _, path in english}
+    assert {language for language, _ in portuguese} == {"pt"}
+    assert {language for language, _ in english} == {"en"}
+    assert ("pt", "header.issuer_cnpj") in portuguese
+
+
+def _review_keys(
+    actions: DemoActions, screen: dict[str, object], language: str
+) -> set[tuple[str, str]]:
+    with gr.Blocks() as demo:
+        state = gr.State(screen)
+        render_result(actions, screen, state, language)
+    return {
+        block.key
+        for block in demo.blocks.values()
+        if isinstance(block, gr.Textbox) and isinstance(block.key, tuple)
+    }
 
 
 def test_language_choice_is_stored_in_the_browser_script() -> None:

@@ -86,19 +86,19 @@ _HEADER_MONEY = frozenset(
 )
 _GRADIO_MAX_UPLOAD_BYTES = 32 * 1024 * 1024
 _LANGUAGE_KEY = "nfe-demo-language"
-_STORE_LANGUAGE_JS = """
-(choice) => {
+_STORE_LANGUAGE_JS = f"""
+(choice) => {{
   const code = choice === "English" ? "en" : "pt";
-  localStorage.setItem("nfe-demo-language", code);
+  localStorage.setItem("{_LANGUAGE_KEY}", code);
   return [choice];
-}
+}}
 """
-_RESTORE_LANGUAGE_JS = """
-(choice) => {
-  const stored = localStorage.getItem("nfe-demo-language");
+_RESTORE_LANGUAGE_JS = f"""
+(choice) => {{
+  const stored = localStorage.getItem("{_LANGUAGE_KEY}");
   if (stored === "en") return ["English"];
   return [choice];
-}
+}}
 """
 _LANGUAGE_CSS = """
 #demo-title-row { align-items: center; flex-wrap: wrap; }
@@ -734,7 +734,9 @@ def _draw_document(
         gr.Textbox(
             value=field.value,
             label=field.label,
-            key=field.path,
+            # The language is part of the key so a switch builds new boxes.
+            # Gradio would otherwise keep text the visitor typed and has not sent.
+            key=(view.language, field.path),
             interactive=True,
         )
         for field in view.review_fields
