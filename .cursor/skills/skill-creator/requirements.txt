@@ -1,0 +1,12 @@
+# Required. Skill validation and packaging (quick_validate.py, package_skill.py).
+PyYAML>=6.0
+
+# Optional. Automated description trigger optimization: cursor_runtime.py,
+# run_eval.py, improve_description.py, run_loop.py.
+#
+# Left out of the default install on purpose. Those scripts drive real Cursor
+# agents, so they need a CURSOR_API_KEY and they spend tokens on every probe.
+# The manual calibration loop documented in SKILL.md is the default path and
+# needs neither. Install this only when you want the automated loop:
+#
+#     pip install "cursor-sdk>=1.0.28"

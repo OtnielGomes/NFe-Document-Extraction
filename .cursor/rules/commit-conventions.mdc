@@ -1,0 +1,34 @@
+---
+description: Conventional commit messages for every git commit in this project. Use when creating commits, writing commit messages, or grouping staged changes.
+alwaysApply: true
+---
+
+# Commit Conventions
+
+When creating a git commit, write the message in English using this format:
+
+```
+type: short imperative summary
+```
+
+- One primary `type` per commit — pick the intent that best describes the change
+- Imperative mood, lowercase after the colon, no trailing period
+- Example: `feat: add email classification` — not `Added email classification.` or `feat: Add Email Classification`
+
+## Types
+
+| Type | Use when | Example |
+|------|----------|---------|
+| `feat` | New feature or capability | `feat: add email classification` |
+| `fix` | Bug fix | `fix: resolve deployment issue` |
+| `docs` | Documentation only | `docs: update README` |
+| `style` | Formatting, CSS/UI visual, or lint — no logic change | `style: improve chat interface` |
+| `refactor` | Restructure code without changing behavior | `refactor: simplify email service` |
+| `test` | Add or change tests | `test: add email agent tests` |
+| `chore` | Maintenance or config that is neither feature nor bug | `chore: update project dependencies` |
+| `build` | Build system or dependency changes | `build: update Docker configuration` |
+| `ci` | CI/CD and automation | `ci: add GitHub Actions workflow` |
+| `perf` | Performance improvement | `perf: optimize email retrieval` |
+| `revert` | Revert a previous commit | `revert: revert email classification` |
+
+Create a commit only when the user asks. Follow the existing git safety protocol (no force push, no skipping hooks, no amending unless requested).
