@@ -13,6 +13,25 @@ import gradio as gr
 from fastapi import FastAPI
 from PIL import Image
 
+from nfe_document_extraction.app.copy import (
+    CACHED_REVIEW_NOTE,
+    CHOOSE_FILE,
+    CHOOSE_GALLERY_ITEM,
+    COMMENT_HINT,
+    EMPTY_SCREEN,
+    FEEDBACK_FAILED,
+    READING_QUESTION,
+    REJECTION_CONTROL,
+    REVIEW_INTRO,
+    decimal_hint,
+    field_label,
+    gallery_caption,
+    intro_body,
+    language_code,
+    outcome_label,
+    status_label,
+    visitor_text,
+)
 from nfe_document_extraction.app.errors import RequestRejected
 from nfe_document_extraction.app.excel import excel_download_path
 from nfe_document_extraction.app.gallery import GalleryItem, load_gallery
@@ -21,15 +40,17 @@ from nfe_document_extraction.app.service import (
     ExtractionService,
     FeedbackNotRecorded,
 )
-from nfe_document_extraction.app.uploads import HEIC_NOT_ACCEPTED, UNSUPPORTED_TYPE
 
 __all__ = [
     "DemoActions",
+    "LanguageChrome",
     "Refusal",
+    "ScreenCopy",
     "document_panel",
     "editable_field_paths",
     "field_rows",
     "gradio_client_ip",
+    "language_chrome",
     "load_gallery",
     "present_gallery_selection",
     "present_review",
@@ -37,6 +58,7 @@ __all__ = [
     "present_visitor_feedback",
     "render_result",
     "review_inputs",
+    "screen_copy",
     "visitor_feedback_prompt",
 ]
 
@@ -48,11 +70,6 @@ class Refusal:
     message: str
 
 
-_STATUS_LABEL = {
-    "verified": "Verified",
-    "unverifiable": "Unverifiable",
-    "flagged": "Flagged",
-}
 _LINE_ITEM = re.compile(r"line_items\[(\d+)\]\.([A-Za-z0-9_]+)\Z")
 _HEADER_MONEY = frozenset(
     {
@@ -67,23 +84,33 @@ _HEADER_MONEY = frozenset(
         "invoice_total",
     }
 )
-_CHOOSE_FILE = "Choose a PDF, JPG, or PNG."
-_CHOOSE_GALLERY_ITEM = "Choose an invoice from the gallery."
-_OUTCOME_LABEL = {
-    "accepted": "Accepted",
-    "human_review": "Needs review",
-}
-_INTRO = (
-    "# NFe Document Extraction\n\n"
-    f"{UNSUPPORTED_TYPE} At most 3 pages and 10 MB. {HEIC_NOT_ACCEPTED}\n\n"
-    "The gallery shows cached results for synthetic invoices. "
-    "Selecting one does not call a model and does not create a trace."
-)
 _GRADIO_MAX_UPLOAD_BYTES = 32 * 1024 * 1024
-_COMMENT_HINT = "Optional. Do not include invoice data; long numbers are removed."
-_FEEDBACK_FAILED = "Feedback could not be saved."
-_READING_QUESTION = "Was this reading correct?"
-_REJECTION_CONTROL = "This is a DANFE"
+_LANGUAGE_KEY = "nfe-demo-language"
+_STORE_LANGUAGE_JS = """
+(choice) => {
+  const code = choice === "English" ? "en" : "pt";
+  localStorage.setItem("nfe-demo-language", code);
+  return [choice];
+}
+"""
+_RESTORE_LANGUAGE_JS = """
+(choice) => {
+  const stored = localStorage.getItem("nfe-demo-language");
+  if (stored === "en") return ["English"];
+  return [choice];
+}
+"""
+_LANGUAGE_CSS = """
+#demo-title-row { align-items: center; flex-wrap: wrap; }
+#demo-title-row > .block {
+  min-width: min(16rem, 100%) !important;
+  flex: 1 1 16rem !important;
+  overflow: visible !important;
+}
+#demo-language { margin-left: auto; }
+#demo-language .wrap { flex-direction: row; flex-wrap: nowrap; gap: 0.75rem 1rem; align-items: center; }
+#demo-language label { white-space: nowrap; }
+"""
 
 
 class DemoActions:
@@ -155,7 +182,7 @@ class DemoActions:
                 feedback_ref, score=score, comment=comment
             )
         except FeedbackNotRecorded:
-            return Refusal(_FEEDBACK_FAILED)
+            return Refusal(FEEDBACK_FAILED)
         return None
 
     def submit_review(
@@ -187,15 +214,22 @@ class ReviewInput:
 
     path: str
     value: str
+    label: str
 
 
-def review_inputs(body: Mapping[str, object]) -> tuple[ReviewInput, ...]:
+def review_inputs(
+    body: Mapping[str, object], *, language: str = "pt"
+) -> tuple[ReviewInput, ...]:
     """Text boxes for an open review. Empty when the document is not paused."""
     extraction = body.get("extraction")
     if not isinstance(extraction, dict):
         return ()
     return tuple(
-        ReviewInput(path=path, value=field_value(extraction, path))
+        ReviewInput(
+            path=path,
+            value=field_value(extraction, path),
+            label=field_label(path, language, extraction),
+        )
         for path in editable_field_paths(body)
     )
 
@@ -204,7 +238,7 @@ def present_gallery_selection(actions: DemoActions, index: object) -> dict[str, 
     """The cached document for a gallery click, or a prompt to pick one."""
     resolved = _gallery_index(index)
     if resolved is None or not 0 <= resolved < len(actions.gallery_cards()):
-        return {"notice": _CHOOSE_GALLERY_ITEM, "body": None}
+        return {"notice": CHOOSE_GALLERY_ITEM, "body": None}
     return {"notice": None, "body": actions.open_gallery_item(resolved)}
 
 
@@ -213,7 +247,7 @@ def present_upload(
 ) -> dict[str, object]:
     """Read one chosen file through the extraction service."""
     if path is None or path == "":
-        return {"notice": _CHOOSE_FILE, "body": None}
+        return {"notice": CHOOSE_FILE, "body": None}
     file = Path(path)
     return actions.open_upload(
         file.read_bytes(),
@@ -272,9 +306,9 @@ def visitor_feedback_prompt(screen: Mapping[str, object]) -> str | None:
     if not isinstance(ref, str) or ref == "":
         return None
     if screen.get("feedback_kind") == "rejection":
-        return _REJECTION_CONTROL
+        return REJECTION_CONTROL
     if isinstance(screen.get("body"), dict):
-        return _READING_QUESTION
+        return READING_QUESTION
     return None
 
 
@@ -288,7 +322,7 @@ def present_visitor_feedback(
     """Record thumbs and an optional comment. The document on screen stays put."""
     ref = screen.get("feedback_ref")
     if not isinstance(ref, str) or ref == "":
-        return _with_feedback_notice(screen, _FEEDBACK_FAILED)
+        return _with_feedback_notice(screen, FEEDBACK_FAILED)
     failure = actions.submit_feedback(ref, score=score, comment=comment)
     if failure is not None:
         return _with_feedback_notice(screen, failure.message)
@@ -330,8 +364,8 @@ def gradio_client_ip(request: object) -> str:
     return visitor_ip(forwarded, peer)
 
 
-def field_rows(body: Mapping[str, object]) -> list[list[str]]:
-    """Field, status label, printed value, and validator messages."""
+def field_rows(body: Mapping[str, object], *, language: str = "pt") -> list[list[str]]:
+    """Field label, status, printed value, and validator messages."""
     extraction = body["extraction"]
     fields = body["fields"]
     if not isinstance(extraction, dict) or not isinstance(fields, list):
@@ -346,10 +380,10 @@ def field_rows(body: Mapping[str, object]) -> list[list[str]]:
             raise TypeError("Field messages must be a list.")
         rows.append(
             [
-                path,
-                _STATUS_LABEL[str(field["status"])],
+                field_label(path, language, extraction),
+                status_label(str(field["status"]), language),
                 field_value(extraction, path),
-                "; ".join(str(message) for message in messages),
+                "; ".join(visitor_text(str(message), language) for message in messages),
             ]
         )
     return rows
@@ -427,66 +461,142 @@ def _uploaded_path(value: object) -> str | None:
     return None
 
 
+@dataclass(frozen=True)
+class LanguageChrome:
+    """Title-row text and gallery cards for one language. No service call."""
+
+    language: str
+    intro: str
+    gallery_label: str
+    extract_label: str
+    cards: tuple[tuple[Image.Image, str], ...]
+
+    @property
+    def captions(self) -> tuple[str, ...]:
+        return tuple(caption for _, caption in self.cards)
+
+
+@dataclass(frozen=True)
+class ScreenCopy:
+    """What the visitor reads for a screen the page already holds."""
+
+    language: str
+    notice: str | None
+    outcome_line: str | None
+    review_messages: tuple[str, ...]
+    table_label: str
+    headers: tuple[str, str, str, str]
+    rows: tuple[tuple[str, str, str, str], ...]
+    download_label: str
+    cached_note: str | None
+    review_intro: str | None
+    decimal_hint: str | None
+    review_fields: tuple[ReviewInput, ...]
+    submit_label: str
+    empty_hint: str | None
+    feedback_notice: str | None
+    feedback_question: str | None
+    rejection_label: str | None
+    comment_label: str
+    comment_hint: str
+    positive_label: str
+    negative_label: str
+    show_feedback: bool
+
+
+def language_chrome(actions: DemoActions, choice: object) -> LanguageChrome:
+    """Redraw the page chrome. Gallery cards are the cache, with a new caption."""
+    language = language_code(choice)
+    return LanguageChrome(
+        language=language,
+        intro=intro_body(language),
+        gallery_label=visitor_text("Synthetic invoices", language),
+        extract_label=visitor_text("Extract", language),
+        cards=tuple(
+            (image, gallery_caption(caption, language))
+            for image, caption in actions.gallery_cards()
+        ),
+    )
+
+
+def screen_copy(screen: Mapping[str, object], language: str) -> ScreenCopy:
+    """Translate the screen already held. Does not read a file or call a model."""
+    body = screen.get("body")
+    document = body if isinstance(body, dict) else None
+    fields = review_inputs(document, language=language) if document else ()
+    hint = decimal_hint(language) if fields else ""
+    prompt = visitor_feedback_prompt(screen)
+    return ScreenCopy(
+        language=language,
+        notice=_translate(_text(screen.get("notice")), language),
+        outcome_line=_outcome_line(document, language),
+        review_messages=_review_messages(document, language),
+        table_label=visitor_text("Fields", language),
+        headers=(
+            visitor_text("Field", language),
+            visitor_text("Status", language),
+            visitor_text("Value", language),
+            visitor_text("Messages", language),
+        ),
+        rows=_rows(document, language),
+        download_label=visitor_text("Download Excel", language),
+        cached_note=_cached_note(document, language),
+        review_intro=visitor_text(REVIEW_INTRO, language) if fields else None,
+        decimal_hint=hint or None,
+        review_fields=fields,
+        submit_label=visitor_text("Submit corrections", language),
+        empty_hint=_empty_hint(document, screen, language),
+        feedback_notice=_translate(_text(screen.get("feedback_notice")), language),
+        feedback_question=(
+            visitor_text(prompt, language)
+            if prompt and prompt != REJECTION_CONTROL
+            else None
+        ),
+        rejection_label=(
+            visitor_text(REJECTION_CONTROL, language)
+            if prompt == REJECTION_CONTROL
+            else None
+        ),
+        comment_label=visitor_text("Comment", language),
+        comment_hint=visitor_text(COMMENT_HINT, language),
+        positive_label=visitor_text("Thumbs up", language),
+        negative_label=visitor_text("Thumbs down", language),
+        show_feedback=prompt is not None,
+    )
+
+
 def document_panel(
-    actions: DemoActions, body: Mapping[str, object], screen: gr.State
+    actions: DemoActions,
+    body: Mapping[str, object],
+    screen: gr.State,
+    language: str = "pt",
 ) -> None:
     """Outcome, fields, Excel download, and the review form for one document."""
-    outcome = str(body.get("outcome"))
-    label = _OUTCOME_LABEL.get(outcome, outcome)
-    gr.Markdown(f"**Outcome:** {label}", elem_id="document-outcome")
-    messages = body.get("review_messages")
-    if isinstance(messages, list) and messages:
-        gr.Markdown("\n".join(f"- {message}" for message in messages))
-    gr.Dataframe(
-        value=field_rows(body),
-        headers=["Field", "Status", "Value", "Messages"],
-        label="Fields",
-        interactive=False,
-        max_height=480,
-    )
-    gr.DownloadButton(
-        label="Download Excel",
-        value=str(excel_download_path(body)),
-        elem_id="download-excel",
-    )
-    if outcome == "human_review" and not body.get("thread_id"):
-        gr.Markdown(
-            "This cached result is not an open review. "
-            "Upload a document to correct flagged fields."
-        )
-    fields = review_inputs(body)
-    if not fields:
-        return
-    gr.Markdown("Edit only the flagged fields. The same rules check your corrections.")
-    boxes = [
-        gr.Textbox(
-            value=field.value,
-            label=field.path,
-            key=field.path,
-            interactive=True,
-        )
-        for field in fields
-    ]
-    submit = gr.Button("Submit corrections")
-
-    def _submit(current: object, *values: object) -> dict[str, object]:
-        edits = {field.path: value for field, value in zip(fields, values, strict=True)}
-        base = current if isinstance(current, dict) else {"notice": None, "body": body}
-        return present_review(actions, base, edits)
-
-    submit.click(_submit, [screen, *boxes], screen)
+    _draw_document(actions, body, screen, screen_copy({"body": body}, language))
 
 
 def build_blocks(actions: DemoActions) -> gr.Blocks:
     """The demo page. Gallery clicks never call the extraction service."""
     with gr.Blocks(title="NFe Document Extraction") as demo:
-        gr.Markdown(_INTRO)
+        with gr.Row(elem_id="demo-title-row"):
+            gr.Markdown("# NFe Document Extraction", min_width=240, scale=1)
+            language_choice = gr.Radio(
+                choices=["Português", "English"],
+                value="Português",
+                show_label=False,
+                elem_id="demo-language",
+                min_width=240,
+                scale=0,
+            )
+        language = gr.State("pt")
         screen = gr.State({"notice": None, "body": None})
+        opening = language_chrome(actions, "Português")
+        intro = gr.Markdown(opening.intro)
         with gr.Row():
             with gr.Column():
                 gallery = gr.Gallery(
-                    value=list(actions.gallery_cards()),
-                    label="Synthetic invoices",
+                    value=list(opening.cards),
+                    label=opening.gallery_label,
                     columns=3,
                     allow_preview=False,
                     object_fit="contain",
@@ -501,12 +611,43 @@ def build_blocks(actions: DemoActions) -> gr.Blocks:
                     file_types=[".pdf", ".jpg", ".jpeg", ".png", ".heic", ".heif"],
                     type="filepath",
                 )
-                extract = gr.Button("Extract")
+                extract = gr.Button(opening.extract_label)
             with gr.Column():
 
-                @gr.render(inputs=screen)
-                def _draw(current: object) -> None:
-                    render_result(actions, current, screen)
+                @gr.render(inputs=[screen, language], show_progress="hidden")
+                def _draw(current: object, selected: object) -> None:
+                    render_result(
+                        actions,
+                        current,
+                        screen,
+                        selected if isinstance(selected, str) else "pt",
+                    )
+
+        def _apply(choice: object) -> tuple[object, ...]:
+            chrome = language_chrome(actions, choice)
+            return _chrome_update(chrome)
+
+        def _restore(choice: object) -> tuple[object, ...]:
+            selected = "English" if language_code(choice) == "en" else "Português"
+            return (selected, *_chrome_update(language_chrome(actions, selected)))
+
+        # Queued on purpose: Gradio only tells @gr.render that a State changed
+        # when the event runs through the queue. queue=False updates the chrome
+        # and leaves the open document in the previous language.
+        language_choice.change(
+            _apply,
+            language_choice,
+            [language, intro, gallery, extract],
+            js=_STORE_LANGUAGE_JS,
+            show_progress="hidden",
+        )
+        demo.load(
+            _restore,
+            language_choice,
+            [language_choice, language, intro, gallery, extract],
+            js=_RESTORE_LANGUAGE_JS,
+            show_progress="hidden",
+        )
 
         def _on_select(evt: gr.SelectData) -> dict[str, object]:
             return present_gallery_selection(actions, evt.index)
@@ -536,44 +677,166 @@ def mount_demo(app: FastAPI, actions: DemoActions) -> None:
         ssr_mode=False,
         enable_monitoring=False,
         max_file_size=_GRADIO_MAX_UPLOAD_BYTES,
+        css=_LANGUAGE_CSS,
     )
 
 
-def render_result(actions: DemoActions, current: object, screen: gr.State) -> None:
-    """Outcome, review, and visitor feedback for the current screen."""
-    notice, body = _screen_parts(current)
-    if notice:
-        gr.Markdown(notice)
-    if isinstance(body, dict):
-        document_panel(actions, body, screen)
-    elif not notice:
-        gr.Markdown("Select a gallery invoice or upload a DANFE.")
-    _render_visitor_feedback(actions, current, screen)
-
-
-def _render_visitor_feedback(
-    actions: DemoActions, current: object, screen: gr.State
+def render_result(
+    actions: DemoActions,
+    current: object,
+    screen: gr.State,
+    language: str = "pt",
 ) -> None:
-    if not isinstance(current, dict):
+    """Outcome, review, and visitor feedback for the current screen."""
+    data = current if isinstance(current, dict) else {}
+    view = screen_copy(data, language)
+    if view.notice:
+        gr.Markdown(view.notice)
+    body = data.get("body")
+    if isinstance(body, dict):
+        _draw_document(actions, body, screen, view)
+    elif view.empty_hint:
+        gr.Markdown(view.empty_hint)
+    _draw_feedback(actions, screen, view)
+
+
+def _draw_document(
+    actions: DemoActions,
+    body: Mapping[str, object],
+    screen: gr.State,
+    view: ScreenCopy,
+) -> None:
+    if view.outcome_line:
+        gr.Markdown(view.outcome_line, elem_id="document-outcome")
+    if view.review_messages:
+        gr.Markdown("\n".join(f"- {message}" for message in view.review_messages))
+    gr.Dataframe(
+        value=[list(row) for row in view.rows],
+        headers=list(view.headers),
+        label=view.table_label,
+        interactive=False,
+        max_height=480,
+    )
+    gr.DownloadButton(
+        label=view.download_label,
+        value=str(excel_download_path(body, language=view.language)),
+        elem_id="download-excel",
+    )
+    if view.cached_note:
+        gr.Markdown(view.cached_note)
+    if not view.review_fields:
         return
-    prompt = visitor_feedback_prompt(current)
-    if prompt is None:
+    if view.review_intro:
+        gr.Markdown(view.review_intro)
+    if view.decimal_hint:
+        gr.Markdown(view.decimal_hint)
+    boxes = [
+        gr.Textbox(
+            value=field.value,
+            label=field.label,
+            key=field.path,
+            interactive=True,
+        )
+        for field in view.review_fields
+    ]
+    submit = gr.Button(view.submit_label)
+
+    def _submit(current: object, *values: object) -> dict[str, object]:
+        edits = {
+            field.path: value
+            for field, value in zip(view.review_fields, values, strict=True)
+        }
+        base = current if isinstance(current, dict) else {"notice": None, "body": body}
+        return present_review(actions, base, edits)
+
+    submit.click(_submit, [screen, *boxes], screen)
+
+
+def _draw_feedback(actions: DemoActions, screen: gr.State, view: ScreenCopy) -> None:
+    if not view.show_feedback:
         return
-    feedback_notice = current.get("feedback_notice")
-    if isinstance(feedback_notice, str) and feedback_notice:
-        gr.Markdown(feedback_notice)
-    if prompt != _REJECTION_CONTROL:
-        gr.Markdown(f"**{prompt}**")
-    comment = gr.Textbox(label="Comment", info=_COMMENT_HINT)
-    if prompt == _REJECTION_CONTROL:
-        confirm = gr.Button(_REJECTION_CONTROL)
+    if view.feedback_notice:
+        gr.Markdown(view.feedback_notice)
+    if view.feedback_question:
+        gr.Markdown(f"**{view.feedback_question}**")
+    comment = gr.Textbox(label=view.comment_label, info=view.comment_hint)
+    if view.rejection_label:
+        confirm = gr.Button(view.rejection_label)
         confirm.click(_feedback_handler(actions, 0), [screen, comment], screen)
         return
     with gr.Row():
-        up = gr.Button("Thumbs up")
-        down = gr.Button("Thumbs down")
+        up = gr.Button(view.positive_label)
+        down = gr.Button(view.negative_label)
     up.click(_feedback_handler(actions, 1), [screen, comment], screen)
     down.click(_feedback_handler(actions, 0), [screen, comment], screen)
+
+
+def _chrome_update(chrome: LanguageChrome) -> tuple[object, ...]:
+    return (
+        chrome.language,
+        chrome.intro,
+        gr.update(value=list(chrome.cards), label=chrome.gallery_label),
+        gr.update(value=chrome.extract_label),
+    )
+
+
+def _rows(
+    document: Mapping[str, object] | None, language: str
+) -> tuple[tuple[str, str, str, str], ...]:
+    if document is None:
+        return ()
+    return tuple(
+        (row[0], row[1], row[2], row[3])
+        for row in field_rows(document, language=language)
+    )
+
+
+def _outcome_line(document: Mapping[str, object] | None, language: str) -> str | None:
+    if document is None:
+        return None
+    label = outcome_label(str(document.get("outcome")), language)
+    return f"**{visitor_text('Outcome', language)}:** {label}"
+
+
+def _review_messages(
+    document: Mapping[str, object] | None, language: str
+) -> tuple[str, ...]:
+    if document is None:
+        return ()
+    messages = document.get("review_messages")
+    if not isinstance(messages, list):
+        return ()
+    return tuple(visitor_text(str(message), language) for message in messages)
+
+
+def _cached_note(document: Mapping[str, object] | None, language: str) -> str | None:
+    if document is None:
+        return None
+    if document.get("outcome") == "human_review" and not document.get("thread_id"):
+        return visitor_text(CACHED_REVIEW_NOTE, language)
+    return None
+
+
+def _translate(english: str | None, language: str) -> str | None:
+    if english is None:
+        return None
+    return visitor_text(english, language)
+
+
+def _empty_hint(
+    document: Mapping[str, object] | None,
+    screen: Mapping[str, object],
+    language: str,
+) -> str | None:
+    if document is None and _text(screen.get("notice")) is None:
+        return visitor_text(EMPTY_SCREEN, language)
+    return None
+
+
+def _text(value: object) -> str | None:
+    if isinstance(value, str) and value:
+        return value
+    return None
 
 
 def _feedback_handler(
@@ -589,10 +852,3 @@ def _feedback_handler(
         )
 
     return _handler
-
-
-def _screen_parts(current: object) -> tuple[str | None, object]:
-    if not isinstance(current, dict):
-        return None, None
-    notice = current.get("notice")
-    return (notice if isinstance(notice, str) and notice else None), current.get("body")

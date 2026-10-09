@@ -35,7 +35,7 @@ def test_an_accepted_document_exports_three_sheets_with_typed_cells() -> None:
     body = _gallery_body("synthetic-001 · digital PDF")
 
     assert excel_filename(body) == "nfe-1-1.xlsx"
-    book = load_workbook(io.BytesIO(workbook_bytes(body)))
+    book = load_workbook(io.BytesIO(workbook_bytes(body, language="en")))
 
     assert book.sheetnames == ["Summary", "Header", "Line items"]
     summary = book["Summary"]
@@ -51,35 +51,33 @@ def test_an_accepted_document_exports_three_sheets_with_typed_cells() -> None:
         "Status",
         "Messages",
     ]
-    issuer = _header_row(header, "header.issuer_cnpj")
+    issuer = _header_row(header, "Issuer CNPJ")
     assert issuer[1].value == "83606369122950"
     assert issuer[1].data_type == "s"
     assert issuer[1].number_format == "@"
     assert issuer[2].value == "Verified"
     assert issuer[3].value is None
-    recipient = _header_row(header, "header.recipient_cnpj_cpf")
+    recipient = _header_row(header, "Recipient CNPJ/CPF")
     assert recipient[1].value == "00149687169118"
     assert recipient[1].data_type == "s"
-    access_key = _header_row(header, "header.access_key")
+    access_key = _header_row(header, "Access key")
     assert access_key[1].value == "35240983606369122950550010000000011645576624"
     assert access_key[1].data_type == "s"
-    issued = _header_row(header, "header.issue_date")
+    issued = _header_row(header, "Issue date")
     assert issued[1].is_date
     issued_on = issued[1].value
     assert isinstance(issued_on, datetime)
     assert (issued_on.year, issued_on.month, issued_on.day) == (2024, 9, 7)
-    products = _header_row(header, "header.total_products")
+    products = _header_row(header, "Total products")
     assert products[1].number_format == "0.00"
     assert f"{products[1].value:.2f}" == "44579.28"
-    invoice = _header_row(header, "header.invoice_total")
+    invoice = _header_row(header, "Invoice total")
     assert invoice[1].number_format == "0.00"
     assert f"{invoice[1].value:.2f}" == "52157.76"
-    freight = _header_row(header, "header.freight")
+    freight = _header_row(header, "Freight")
     assert freight[1].number_format == "0.00"
     assert f"{freight[1].value:.2f}" == "0.00"
-    assert _header_row(header, "header.unsupported_components.import_tax")[2].value == (
-        "Unverifiable"
-    )
+    assert _header_row(header, "Import tax")[2].value == ("Unverifiable")
 
     items = book["Line items"]
     assert [cell.value for cell in items[1]] == [
@@ -137,7 +135,7 @@ def test_a_document_in_needs_review_highlights_flagged_line_cells() -> None:
     )
 
     assert excel_filename(body) == "nfe-000000123-001.xlsx"
-    book = load_workbook(io.BytesIO(workbook_bytes(body)))
+    book = load_workbook(io.BytesIO(workbook_bytes(body, language="en")))
     summary = book["Summary"]
     assert summary["B1"].value == "Needs review"
     assert summary["B2"].value == (
@@ -145,16 +143,16 @@ def test_a_document_in_needs_review_highlights_flagged_line_cells() -> None:
         "and the document goes straight to human review."
     )
     header = book["Header"]
-    series = _header_row(header, "header.series")
+    series = _header_row(header, "Series")
     assert series[1].value == "001"
     assert series[1].data_type == "s"
-    number = _header_row(header, "header.number")
+    number = _header_row(header, "Number")
     assert number[1].value == "000000123"
     assert number[1].data_type == "s"
-    issuer = _header_row(header, "header.issuer_cnpj")
+    issuer = _header_row(header, "Issuer CNPJ")
     assert issuer[1].value == "00000000000191"
     assert issuer[1].data_type == "s"
-    access_key = _header_row(header, "header.access_key")
+    access_key = _header_row(header, "Access key")
     assert access_key[1].value == "35241000000000000191550010000001231000000010"
     assert access_key[1].data_type == "s"
 
@@ -208,7 +206,7 @@ def test_a_reviewed_document_exports_the_corrected_line_without_highlights() -> 
     assert reviewed["outcome"] == "accepted"
     assert reviewed["thread_id"] is None
     assert excel_filename(reviewed) == "nfe-123-1.xlsx"
-    book = load_workbook(io.BytesIO(workbook_bytes(reviewed)))
+    book = load_workbook(io.BytesIO(workbook_bytes(reviewed, language="en")))
     assert book["Summary"]["B1"].value == "Accepted"
     assert book["Summary"]["B2"].value is None
     row = _item_row(book["Line items"], "SKU-1")
@@ -230,6 +228,68 @@ def test_filename_falls_back_when_number_or_series_cannot_be_read() -> None:
         excel_filename(_without_header_value(body, "series")) == "nfe-extraction.xlsx"
     )
     assert excel_filename({"outcome": "accepted"}) == "nfe-extraction.xlsx"
+
+
+def test_the_workbook_follows_the_language_and_keeps_the_file_name() -> None:
+    body = _payload(
+        _extraction(
+            line_items=(
+                _line_item(
+                    ncm="09012100",
+                    cfop="0102",
+                    quantity=Decimal(9),
+                    unit_price=Decimal("8.00"),
+                ),
+            ),
+            series="001",
+            number="000000123",
+            unsupported_components={
+                "import_tax": True,
+                "returned_ipi": False,
+                "icms_relief": False,
+                "fcp_st": False,
+            },
+        )
+    )
+    english = load_workbook(io.BytesIO(workbook_bytes(body, language="en")))
+    portuguese = load_workbook(io.BytesIO(workbook_bytes(body, language="pt")))
+
+    assert excel_filename(body) == "nfe-000000123-001.xlsx"
+    assert portuguese.sheetnames == ["Resumo", "Cabeçalho", "Itens"]
+    summary = portuguese["Resumo"]
+    assert summary["A1"].value == "Resultado"
+    assert summary["B1"].value == "Precisa de revisão"
+    assert summary["A2"].value == "Mensagens da revisão"
+    assert summary["B2"].value == (
+        "Imposto de importação é um componente não suportado; "
+        "a regra do valor total da nota fica de fora e o documento vai direto "
+        "para revisão humana."
+    )
+    header = portuguese["Cabeçalho"]
+    assert [cell.value for cell in header[1]] == [
+        "Campo",
+        "Valor",
+        "Situação",
+        "Mensagens",
+    ]
+    series = _header_row(header, "Série")
+    assert series[1].value == "001"
+    assert series[1].value == _header_row(english["Header"], "Series")[1].value
+    items = portuguese["Itens"]
+    assert [cell.value for cell in items[1]] == [
+        "Código do produto",
+        "Descrição",
+        "NCM",
+        "CFOP",
+        "Quantidade",
+        "Valor unitário",
+        "Valor do item",
+    ]
+    assert _item_row(items, "SKU-1")[1].value == "Plain bearing"
+    assert (
+        _item_row(items, "SKU-1")[1].value
+        == _item_row(english["Line items"], "SKU-1")[1].value
+    )
 
 
 def _gallery_body(caption: str) -> dict[str, object]:

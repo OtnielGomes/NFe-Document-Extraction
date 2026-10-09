@@ -38,8 +38,6 @@ from nfe_document_extraction.app.ui import (
     visitor_feedback_prompt,
 )
 
-_COMMENT_HINT = "Optional. Do not include invoice data; long numbers are removed."
-
 
 def test_long_digit_runs_with_separators_are_replaced_by_redacted() -> None:
     assert redact_feedback_comment("CNPJ 83.606.369/1229-50") == "CNPJ [redacted]"
@@ -76,9 +74,9 @@ def test_thumbs_and_a_comment_are_feedback_on_that_extraction_run(
     liked = present_upload(actions, _pdf_path(tmp_path), client_ip=_IP)
     labels = _visible_text(actions, liked)
     assert visitor_feedback_prompt(liked) == "Was this reading correct?"
-    assert "Thumbs up" in labels
-    assert "Thumbs down" in labels
-    assert _COMMENT_HINT in labels
+    assert "Correta" in labels
+    assert "Incorreta" in labels
+    assert "Opcional. Não inclua dados da nota; números longos são removidos." in labels
 
     saved = present_visitor_feedback(
         actions,
@@ -208,9 +206,9 @@ def test_feedback_on_a_rejected_document_says_this_is_a_danfe(tmp_path: Path) ->
     assert rejected["body"] is None
     assert visitor_feedback_prompt(rejected) == "This is a DANFE"
     labels = _visible_text(actions, rejected)
-    assert "This is a DANFE" in labels
-    assert "Thumbs up" not in labels
-    assert _COMMENT_HINT in labels
+    assert "Isto é um DANFE" in labels
+    assert "Correta" not in labels
+    assert "Opcional. Não inclua dados da nota; números longos são removidos." in labels
 
     saved = present_visitor_feedback(
         actions, rejected, score=0, comment="it is a printed invoice"
@@ -271,9 +269,9 @@ def test_a_failed_feedback_write_keeps_the_result_and_says_so(tmp_path: Path) ->
     assert failed["feedback_notice"] == "Feedback could not be saved."
     assert failed["body"] == body
     assert failed["notice"] is None
-    assert "Feedback could not be saved." in _visible_text(actions, failed)
+    assert "Não foi possível salvar a sua resposta." in _visible_text(actions, failed)
     assert isinstance(body, dict)
-    assert _visible_text(actions, failed) & {"**Outcome:** Needs review"}
+    assert _visible_text(actions, failed) & {"**Resultado:** Precisa de revisão"}
 
     rejected_actions = _actions(
         ScriptedReader(_extraction(access_key="")), _DownMonitor()
@@ -372,11 +370,11 @@ def _pdf_path(folder: Path, name: str = "invoice.pdf") -> str:
 
 _FEEDBACK_LABELS = frozenset(
     {
-        "Thumbs up",
-        "Thumbs down",
-        "This is a DANFE",
-        "**Was this reading correct?**",
-        _COMMENT_HINT,
+        "Correta",
+        "Incorreta",
+        "Isto é um DANFE",
+        "**Esta leitura está correta?**",
+        "Opcional. Não inclua dados da nota; números longos são removidos.",
     }
 )
 

@@ -113,23 +113,20 @@ def test_an_upload_marks_each_field_verified_unverifiable_or_flagged() -> None:
 
     assert isinstance(uploaded, dict)
     rows = {row[0]: row for row in field_rows(uploaded)}
-    assert rows["header.issuer_cnpj"][1] == "Flagged"
-    assert rows["header.issuer_cnpj"][2] == "00000000000181"
-    assert "Issuer CNPJ check digit does not match." in rows["header.issuer_cnpj"][3]
-    assert rows["line_items[0].description"] == [
-        "line_items[0].description",
-        "Unverifiable",
+    assert rows["CNPJ do emitente"][1] == "Sinalizado"
+    assert rows["CNPJ do emitente"][2] == "00000000000181"
+    assert (
+        "O dígito verificador do CNPJ do emitente não confere."
+        in rows["CNPJ do emitente"][3]
+    )
+    assert rows["Item 1 · Descrição"] == [
+        "Item 1 · Descrição",
+        "Não verificável",
         "Plain bearing",
         "",
     ]
-    verified = next(
-        field["field"]
-        for field in uploaded["fields"]
-        if isinstance(field, dict) and field["status"] == "verified"
-    )
-    assert isinstance(verified, str)
-    assert rows[verified][1] == "Verified"
-    assert rows[verified][3] == ""
+    assert rows["CNPJ/CPF do destinatário"][1] == "Verificado"
+    assert rows["CNPJ/CPF do destinatário"][3] == ""
 
 
 def test_human_review_edits_only_flagged_fields_and_revalidates() -> None:
@@ -273,12 +270,9 @@ def test_the_demo_page_and_the_api_share_one_upload_limit(tmp_path: Path) -> Non
     assert page.status_code == 200
     text = page.text + json.dumps(app.state.demo_blocks.config, default=str)
     assert "NFe Document Extraction" in text
-    assert "At most 3 pages and 10 MB." in text
-    assert (
-        "HEIC photos are not accepted. Export the photo as JPG and upload that file."
-        in text
-    )
-    assert "does not call a model" in text
+    assert "Envie um PDF, JPG ou PNG." in text
+    assert "Fotos HEIC" in text
+    assert "não chama o modelo" in text or "n\\u00e3o chama o modelo" in text
     galleries = [
         component
         for component in app.state.demo_blocks.config["components"]
@@ -439,11 +433,11 @@ def test_the_page_offers_excel_for_gallery_uploads_and_reviewed_results() -> Non
     )
     for body, filename in offered:
         button = _excel_button(actions, body)
-        assert button.label == "Download Excel"
+        assert button.label == "Baixar Excel"
         assert isinstance(button.value, dict)
         assert button.value["orig_name"] == filename
         book = load_workbook(_download_file(button.value))
-        assert book.sheetnames == ["Summary", "Header", "Line items"]
+        assert book.sheetnames == ["Resumo", "Cabeçalho", "Itens"]
 
 
 def _excel_button(actions: DemoActions, body: dict[str, object]) -> gr.DownloadButton:

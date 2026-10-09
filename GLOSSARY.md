@@ -2,6 +2,8 @@
 
 Turns a printed Brazilian goods invoice into structured data and states, field by field, whether the reading can be trusted. The model reads; deterministic rules decide.
 
+A `PT:` line gives the term's canonical label in the Portuguese interface.
+
 ## Documents
 
 **NF-e**:
@@ -18,10 +20,12 @@ _Avoid_: Input file, version
 
 **Simulated photo**:
 A Rendition produced by programmatically degrading a digital PDF (perspective, blur, shadow, compression). Cleaner than a real photo.
+PT: Foto simulada
 _Avoid_: Fake photo, scan
 
 **Phone photo**:
 A Rendition captured by a real phone camera from a printed DANFE.
+PT: Foto de celular
 _Avoid_: Picture, scan
 
 **Access key**:
@@ -66,18 +70,22 @@ _Avoid_: Check, constraint, guardrail
 
 **Verified field**:
 A field covered by at least one Validation rule, with all covering rules passing.
+PT: Verificado
 _Avoid_: Valid field, confirmed field
 
 **Unverifiable field**:
 A field no Validation rule covers (for example, a line item description). Accepted but reported as unverified.
+PT: Não verificável
 _Avoid_: Unchecked field, optional field
 
 **Flagged field**:
 A field that takes part in at least one failing Validation rule. When a sum fails, every term of the sum is flagged.
+PT: Sinalizado
 _Avoid_: Invalid field, error field
 
 **Accepted document**:
 A document with no Flagged fields. It may still contain Unverifiable fields.
+PT: Aceito
 _Avoid_: Valid document, approved document
 
 **Rejected document**:
@@ -90,6 +98,7 @@ _Avoid_: Retry, correction loop
 
 **Human review**:
 The step where a person edits only the Flagged fields of a document that still fails after the Repair attempt; the edits are validated again.
+PT: Revisão humana; a document waiting for it is shown as "Precisa de revisão"
 _Avoid_: Manual check, approval
 
 **Visitor feedback**:
@@ -112,6 +121,7 @@ _Avoid_: Production data, private set
 
 **Planted error**:
 A deliberate inconsistency inserted into a synthetic DANFE to prove that a Validation rule catches it. Measured by detection rate, never by field accuracy.
+PT: Erro plantado
 _Avoid_: Injected bug, corrupted sample
 
 **Item alignment**:
