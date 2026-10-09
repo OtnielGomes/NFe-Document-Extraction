@@ -213,10 +213,8 @@ def test_an_upload_with_no_access_key_says_it_is_not_a_danfe(tmp_path: Path) -> 
 
     shown = present_upload(actions, _write_pdf(tmp_path), client_ip=_IP)
 
-    assert shown == {
-        "notice": "This document does not look like a DANFE.",
-        "body": None,
-    }
+    assert shown["notice"] == "This document does not look like a DANFE."
+    assert shown["body"] is None
 
 
 def test_the_screen_shows_upload_rules_refusals_and_review_errors(

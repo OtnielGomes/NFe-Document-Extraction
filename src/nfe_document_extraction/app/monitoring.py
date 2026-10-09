@@ -1,4 +1,4 @@
-"""Demo traces: metadata, cost, and review feedback. Never the document."""
+"""Demo traces: metadata, cost, review edits, and visitor feedback. Never the document."""
 
 from __future__ import annotations
 
@@ -32,12 +32,23 @@ class ExtractTrace:
 
 
 class DemoMonitor(Protocol):
-    """Where a finished extraction and a human correction are recorded."""
+    """Where a finished extraction, a human correction, and visitor feedback go."""
 
     def record_extraction(self, trace: ExtractTrace) -> None: ...
 
     def record_human_correction(
         self, run_id: str, edits: Mapping[str, object]
+    ) -> None: ...
+
+    def accepts_visitor_feedback(self) -> bool: ...
+
+    def record_visitor_feedback(
+        self,
+        run_id: str,
+        *,
+        score: int,
+        comment: str,
+        feedback_id: str,
     ) -> None: ...
 
 
@@ -48,6 +59,19 @@ class NullMonitor:
         return None
 
     def record_human_correction(self, run_id: str, edits: Mapping[str, object]) -> None:
+        return None
+
+    def accepts_visitor_feedback(self) -> bool:
+        return False
+
+    def record_visitor_feedback(
+        self,
+        run_id: str,
+        *,
+        score: int,
+        comment: str,
+        feedback_id: str,
+    ) -> None:
         return None
 
 
@@ -69,12 +93,21 @@ class TraceClient(Protocol):
         **kwargs: Any,
     ) -> Any: ...
 
+    def update_feedback(
+        self,
+        feedback_id: str,
+        *,
+        score: int | None = None,
+        comment: str | None = None,
+    ) -> None: ...
+
 
 class LangSmithMonitor:
-    """Posts a metadata-only run and attaches human corrections as feedback."""
+    """Posts a metadata-only run and attaches corrections and visitor feedback."""
 
     def __init__(self, client: TraceClient) -> None:
         self._client = client
+        self._visitor_feedback_ids: set[str] = set()
 
     def record_extraction(self, trace: ExtractTrace) -> None:
         now = datetime.now(UTC)
@@ -101,6 +134,29 @@ class LangSmithMonitor:
             key="human_correction",
             value=dict(edits),
         )
+
+    def accepts_visitor_feedback(self) -> bool:
+        return True
+
+    def record_visitor_feedback(
+        self,
+        run_id: str,
+        *,
+        score: int,
+        comment: str,
+        feedback_id: str,
+    ) -> None:
+        if feedback_id in self._visitor_feedback_ids:
+            self._client.update_feedback(feedback_id, score=score, comment=comment)
+            return
+        self._client.create_feedback(
+            run_id=run_id,
+            key="visitor_feedback",
+            score=score,
+            comment=comment,
+            feedback_id=feedback_id,
+        )
+        self._visitor_feedback_ids.add(feedback_id)
 
 
 def extraction_trace(run: GraphRun, cost: Decimal) -> ExtractTrace:

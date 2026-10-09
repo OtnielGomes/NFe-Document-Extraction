@@ -3,17 +3,21 @@
 from __future__ import annotations
 
 from collections.abc import Callable, Mapping
+from dataclasses import dataclass
 from datetime import date
 from typing import Any
+from uuid import uuid4
 
 from langgraph.checkpoint.memory import InMemorySaver
 from pydantic import ValidationError
 
 from nfe_document_extraction.agents.sections import SectionReader
 from nfe_document_extraction.app.errors import RequestRejected
+from nfe_document_extraction.app.feedback import redact_feedback_comment
 from nfe_document_extraction.app.limits import CostLimits, UsageLedger
 from nfe_document_extraction.app.monitoring import (
     DemoMonitor,
+    ExtractTrace,
     extraction_trace,
 )
 from nfe_document_extraction.app.uploads import prepare_upload
@@ -33,6 +37,24 @@ UNREADABLE_DOCUMENT = "The document could not be read."
 NOT_A_DANFE = "This document does not look like a DANFE."
 NO_REVIEW = "No document is waiting for review on this thread."
 INVALID_EDIT = "An edit is not a valid value for that field."
+
+
+class FeedbackNotRecorded(Exception):
+    """The monitor did not keep the visitor's answer."""
+
+
+@dataclass(frozen=True)
+class UploadedDocument:
+    """A reading the API returns, plus a server-side handle when feedback is kept."""
+
+    body: dict[str, object]
+    feedback_ref: str | None
+
+
+@dataclass(frozen=True)
+class _VisitorTrace:
+    run_id: str
+    feedback_id: str
 
 
 class ExtractionService:
@@ -55,6 +77,7 @@ class ExtractionService:
         self._checkpointer = InMemorySaver()
         self._ledger = UsageLedger(limits, clock)
         self._trace_ids: dict[str, str] = {}
+        self._visitor_traces: dict[str, _VisitorTrace] = {}
 
     def extract(
         self,
@@ -65,6 +88,22 @@ class ExtractionService:
         client_ip: str,
     ) -> dict[str, object]:
         """Read one upload. File and quota failures happen before the model."""
+        return self.read_upload(
+            data,
+            filename=filename,
+            content_type=content_type,
+            client_ip=client_ip,
+        ).body
+
+    def read_upload(
+        self,
+        data: bytes,
+        *,
+        filename: str | None,
+        content_type: str | None,
+        client_ip: str,
+    ) -> UploadedDocument:
+        """Read one upload and keep its run id when the monitor accepts feedback."""
         prepared = prepare_upload(
             data,
             filename=filename,
@@ -92,10 +131,40 @@ class ExtractionService:
         if run.thread_id is not None and run.awaiting_human_review:
             self._trace_ids[run.thread_id] = trace.run_id
         if run.rejected:
-            raise RequestRejected(NOT_A_DANFE, 422)
+            raise RequestRejected(
+                NOT_A_DANFE, 422, feedback_ref=self._bind_feedback(trace)
+            )
         if run.extraction is None or run.report is None or run.outcome is None:
             raise RequestRejected(UNREADABLE_DOCUMENT, 422)
-        return _document_body(run)
+        return UploadedDocument(_document_body(run), self._bind_feedback(trace))
+
+    def submit_visitor_feedback(
+        self, feedback_ref: str, *, score: int, comment: str
+    ) -> None:
+        """Attach one visitor answer to the extraction run. A repeat replaces it."""
+        stored = self._visitor_traces.get(feedback_ref)
+        if stored is None:
+            raise FeedbackNotRecorded()
+        try:
+            self._monitor.record_visitor_feedback(
+                stored.run_id,
+                score=score,
+                comment=redact_feedback_comment(comment),
+                feedback_id=stored.feedback_id,
+            )
+        except Exception as exc:
+            # The visitor sees one sentence for any monitor failure. No retry.
+            raise FeedbackNotRecorded() from exc
+
+    def _bind_feedback(self, trace: ExtractTrace) -> str | None:
+        if not self._monitor.accepts_visitor_feedback():
+            return None
+        ref = str(uuid4())
+        self._visitor_traces[ref] = _VisitorTrace(
+            run_id=trace.run_id,
+            feedback_id=str(uuid4()),
+        )
+        return ref
 
     def submit_review(
         self, thread_id: str, edits: Mapping[str, object]

@@ -5,7 +5,7 @@ from __future__ import annotations
 import copy
 import os
 import re
-from collections.abc import Mapping, Sequence
+from collections.abc import Callable, Mapping, Sequence
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -16,7 +16,11 @@ from PIL import Image
 from nfe_document_extraction.app.errors import RequestRejected
 from nfe_document_extraction.app.excel import excel_download_path
 from nfe_document_extraction.app.gallery import GalleryItem, load_gallery
-from nfe_document_extraction.app.service import NO_REVIEW, ExtractionService
+from nfe_document_extraction.app.service import (
+    NO_REVIEW,
+    ExtractionService,
+    FeedbackNotRecorded,
+)
 from nfe_document_extraction.app.uploads import HEIC_NOT_ACCEPTED, UNSUPPORTED_TYPE
 
 __all__ = [
@@ -30,7 +34,10 @@ __all__ = [
     "present_gallery_selection",
     "present_review",
     "present_upload",
+    "present_visitor_feedback",
+    "render_result",
     "review_inputs",
+    "visitor_feedback_prompt",
 ]
 
 
@@ -73,6 +80,10 @@ _INTRO = (
     "Selecting one does not call a model and does not create a trace."
 )
 _GRADIO_MAX_UPLOAD_BYTES = 32 * 1024 * 1024
+_COMMENT_HINT = "Optional. Do not include invoice data; long numbers are removed."
+_FEEDBACK_FAILED = "Feedback could not be saved."
+_READING_QUESTION = "Was this reading correct?"
+_REJECTION_CONTROL = "This is a DANFE"
 
 
 class DemoActions:
@@ -107,6 +118,45 @@ class DemoActions:
             )
         except RequestRejected as exc:
             return Refusal(exc.message)
+
+    def open_upload(
+        self,
+        data: bytes,
+        *,
+        filename: str | None,
+        content_type: str | None,
+        client_ip: str,
+    ) -> dict[str, object]:
+        """The screen for one file, including a feedback handle when a trace exists."""
+        try:
+            uploaded = self._service.read_upload(
+                data,
+                filename=filename,
+                content_type=content_type,
+                client_ip=client_ip,
+            )
+        except RequestRejected as exc:
+            refused: dict[str, object] = {"notice": exc.message, "body": None}
+            if exc.feedback_ref is not None:
+                refused["feedback_ref"] = exc.feedback_ref
+                refused["feedback_kind"] = "rejection"
+            return refused
+        shown: dict[str, object] = {"notice": None, "body": uploaded.body}
+        if uploaded.feedback_ref is not None:
+            shown["feedback_ref"] = uploaded.feedback_ref
+            shown["feedback_kind"] = "reading"
+        return shown
+
+    def submit_feedback(
+        self, feedback_ref: str, *, score: int, comment: str
+    ) -> Refusal | None:
+        try:
+            self._service.submit_visitor_feedback(
+                feedback_ref, score=score, comment=comment
+            )
+        except FeedbackNotRecorded:
+            return Refusal(_FEEDBACK_FAILED)
+        return None
 
     def submit_review(
         self, thread_id: str, edits: Mapping[str, object]
@@ -165,15 +215,12 @@ def present_upload(
     if path is None or path == "":
         return {"notice": _CHOOSE_FILE, "body": None}
     file = Path(path)
-    result = actions.upload(
+    return actions.open_upload(
         file.read_bytes(),
         filename=file.name,
         content_type=None,
         client_ip=client_ip,
     )
-    if isinstance(result, Refusal):
-        return {"notice": result.message, "body": None}
-    return {"notice": None, "body": result}
 
 
 def present_review(
@@ -184,14 +231,71 @@ def present_review(
     """Revalidate flagged edits. A rejection keeps the open review on screen."""
     body = screen.get("body")
     if not isinstance(body, dict):
-        return {"notice": NO_REVIEW, "body": None}
+        return _continue_screen(screen, notice=NO_REVIEW, body=None)
     thread_id = body.get("thread_id")
     if not isinstance(thread_id, str) or thread_id == "":
-        return {"notice": NO_REVIEW, "body": body}
+        return _continue_screen(screen, notice=NO_REVIEW, body=body)
     result = actions.submit_review(thread_id, edits)
     if isinstance(result, Refusal):
-        return {"notice": result.message, "body": body}
-    return {"notice": None, "body": result}
+        return _continue_screen(screen, notice=result.message, body=body)
+    return _continue_screen(screen, notice=None, body=result)
+
+
+def _continue_screen(
+    screen: Mapping[str, object], *, notice: str | None, body: object
+) -> dict[str, object]:
+    """A new screen that keeps the same extraction's feedback handle."""
+    shown: dict[str, object] = {"notice": notice, "body": body}
+    ref = screen.get("feedback_ref")
+    if isinstance(ref, str) and ref:
+        shown["feedback_ref"] = ref
+    kind = screen.get("feedback_kind")
+    if kind in ("reading", "rejection"):
+        shown["feedback_kind"] = kind
+    feedback_notice = screen.get("feedback_notice")
+    if isinstance(feedback_notice, str) and feedback_notice:
+        shown["feedback_notice"] = feedback_notice
+    return shown
+
+
+def visitor_feedback_prompt(screen: Mapping[str, object]) -> str | None:
+    """The question for a traced upload. Gallery results and a silent monitor have none."""
+    ref = screen.get("feedback_ref")
+    if not isinstance(ref, str) or ref == "":
+        return None
+    if screen.get("feedback_kind") == "rejection":
+        return _REJECTION_CONTROL
+    if isinstance(screen.get("body"), dict):
+        return _READING_QUESTION
+    return None
+
+
+def present_visitor_feedback(
+    actions: DemoActions,
+    screen: Mapping[str, object],
+    *,
+    score: int,
+    comment: str,
+) -> dict[str, object]:
+    """Record thumbs and an optional comment. The document on screen stays put."""
+    ref = screen.get("feedback_ref")
+    if not isinstance(ref, str) or ref == "":
+        return _with_feedback_notice(screen, _FEEDBACK_FAILED)
+    failure = actions.submit_feedback(ref, score=score, comment=comment)
+    if failure is not None:
+        return _with_feedback_notice(screen, failure.message)
+    return _with_feedback_notice(screen, None)
+
+
+def _with_feedback_notice(
+    screen: Mapping[str, object], feedback_notice: str | None
+) -> dict[str, object]:
+    shown = dict(screen)
+    if feedback_notice:
+        shown["feedback_notice"] = feedback_notice
+    else:
+        shown.pop("feedback_notice", None)
+    return shown
 
 
 def gradio_client_ip(request: object) -> str:
@@ -357,11 +461,12 @@ def document_panel(
     ]
     submit = gr.Button("Submit corrections")
 
-    def _submit(*values: object) -> dict[str, object]:
+    def _submit(current: object, *values: object) -> dict[str, object]:
         edits = {field.path: value for field, value in zip(fields, values, strict=True)}
-        return present_review(actions, {"notice": None, "body": body}, edits)
+        base = current if isinstance(current, dict) else {"notice": None, "body": body}
+        return present_review(actions, base, edits)
 
-    submit.click(_submit, boxes, screen)
+    submit.click(_submit, [screen, *boxes], screen)
 
 
 def build_blocks(actions: DemoActions) -> gr.Blocks:
@@ -393,14 +498,7 @@ def build_blocks(actions: DemoActions) -> gr.Blocks:
 
                 @gr.render(inputs=screen)
                 def _draw(current: object) -> None:
-                    notice, body = _screen_parts(current)
-                    if notice:
-                        gr.Markdown(notice)
-                    if not isinstance(body, dict):
-                        if not notice:
-                            gr.Markdown("Select a gallery invoice or upload a DANFE.")
-                        return
-                    document_panel(actions, body, screen)
+                    render_result(actions, current, screen)
 
         def _on_select(evt: gr.SelectData) -> dict[str, object]:
             return present_gallery_selection(actions, evt.index)
@@ -431,6 +529,58 @@ def mount_demo(app: FastAPI, actions: DemoActions) -> None:
         enable_monitoring=False,
         max_file_size=_GRADIO_MAX_UPLOAD_BYTES,
     )
+
+
+def render_result(actions: DemoActions, current: object, screen: gr.State) -> None:
+    """Outcome, review, and visitor feedback for the current screen."""
+    notice, body = _screen_parts(current)
+    if notice:
+        gr.Markdown(notice)
+    if isinstance(body, dict):
+        document_panel(actions, body, screen)
+    elif not notice:
+        gr.Markdown("Select a gallery invoice or upload a DANFE.")
+    _render_visitor_feedback(actions, current, screen)
+
+
+def _render_visitor_feedback(
+    actions: DemoActions, current: object, screen: gr.State
+) -> None:
+    if not isinstance(current, dict):
+        return
+    prompt = visitor_feedback_prompt(current)
+    if prompt is None:
+        return
+    feedback_notice = current.get("feedback_notice")
+    if isinstance(feedback_notice, str) and feedback_notice:
+        gr.Markdown(feedback_notice)
+    if prompt != _REJECTION_CONTROL:
+        gr.Markdown(f"**{prompt}**")
+    comment = gr.Textbox(label="Comment", info=_COMMENT_HINT)
+    if prompt == _REJECTION_CONTROL:
+        confirm = gr.Button(_REJECTION_CONTROL)
+        confirm.click(_feedback_handler(actions, 0), [screen, comment], screen)
+        return
+    with gr.Row():
+        up = gr.Button("Thumbs up")
+        down = gr.Button("Thumbs down")
+    up.click(_feedback_handler(actions, 1), [screen, comment], screen)
+    down.click(_feedback_handler(actions, 0), [screen, comment], screen)
+
+
+def _feedback_handler(
+    actions: DemoActions, score: int
+) -> Callable[[object, object], dict[str, object]]:
+    def _handler(state: object, text: object) -> dict[str, object]:
+        base = state if isinstance(state, dict) else {}
+        return present_visitor_feedback(
+            actions,
+            base,
+            score=score,
+            comment=text if isinstance(text, str) else "",
+        )
+
+    return _handler
 
 
 def _screen_parts(current: object) -> tuple[str | None, object]:

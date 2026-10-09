@@ -72,12 +72,36 @@ class RecordingMonitor:
     def __init__(self) -> None:
         self.extractions: list[ExtractTrace] = []
         self.corrections: list[tuple[str, dict[str, object]]] = []
+        self.visitor_feedback: list[dict[str, object]] = []
 
     def record_extraction(self, trace: ExtractTrace) -> None:
         self.extractions.append(trace)
 
     def record_human_correction(self, run_id: str, edits: Mapping[str, object]) -> None:
         self.corrections.append((run_id, dict(edits)))
+
+    def accepts_visitor_feedback(self) -> bool:
+        return True
+
+    def record_visitor_feedback(
+        self,
+        run_id: str,
+        *,
+        score: int,
+        comment: str,
+        feedback_id: str,
+    ) -> None:
+        note = {
+            "feedback_id": feedback_id,
+            "run_id": run_id,
+            "score": score,
+            "comment": comment,
+        }
+        for index, existing in enumerate(self.visitor_feedback):
+            if existing["feedback_id"] == feedback_id:
+                self.visitor_feedback[index] = note
+                return
+        self.visitor_feedback.append(note)
 
 
 class RecordingLangSmith:
@@ -86,6 +110,7 @@ class RecordingLangSmith:
     def __init__(self) -> None:
         self.runs: list[dict[str, Any]] = []
         self.feedback: list[dict[str, Any]] = []
+        self.updates: list[dict[str, Any]] = []
 
     def create_run(
         self,
@@ -105,6 +130,17 @@ class RecordingLangSmith:
         **kwargs: Any,
     ) -> None:
         self.feedback.append({"run_id": run_id, "key": key, **kwargs})
+
+    def update_feedback(
+        self,
+        feedback_id: str,
+        *,
+        score: int | None = None,
+        comment: str | None = None,
+    ) -> None:
+        self.updates.append(
+            {"feedback_id": feedback_id, "score": score, "comment": comment}
+        )
 
 
 def test_extract_returns_the_reading_field_statuses_and_accepted_outcome() -> None:
