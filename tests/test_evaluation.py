@@ -376,13 +376,14 @@ def test_dated_pricing_table_converts_recorded_tokens_to_usd(monkeypatch) -> Non
 
     assert price.model == "gpt-4.1-mini-2025-04-14"
     assert price.pricing_as_of == date(2026, 10, 8)
-    assert cheap.model == price.model
+    assert cheap.model == "gpt-6-luna"
+    assert cheap.cache_write_usd_per_million == Decimal("0.125")
     assert cheap.pricing_as_of == price.pricing_as_of
     assert strong.model == "gpt-4.1-2025-04-14"
     assert strong.pricing_as_of == date(2026, 10, 8)
     assert token_cost_usd(1_000_000, 0, 1_000_000, price) == Decimal("2.00")
     assert token_cost_usd(1_000_000, 500_000, 0, price) == Decimal("0.25")
-    assert token_cost_usd(1_000_000, 0, 1_000_000, cheap) == Decimal("2.00")
+    assert token_cost_usd(1_000_000, 0, 1_000_000, cheap) == Decimal("0.60")
     assert token_cost_usd(1_000_000, 0, 1_000_000, strong) == Decimal(10)
     assert token_cost_usd(1_000_000, 500_000, 0, strong) == Decimal("1.25")
     assert text_layer.approach == "text layer + text model"

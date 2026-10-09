@@ -82,7 +82,8 @@ def test_eval_compares_baseline_with_cheap_and_strong_vision(
     assert "| text layer + text model | digital PDF | synthetic | 1 |" in text
     assert text.count("| 1 | 1 | 0 | n/a | 0 |") == 3
     assert "| 1 | 0 | 0 | n/a | 0 |" in text
-    assert text.count("| 0.400000 |") == 3
+    assert text.count("| 0.400000 |") == 2
+    assert "| 0.100000 |" in text
     assert "| 2.000000 |" in text
     assert _not_applicable("simulated photo") in text
     assert _not_applicable("phone photo") in text
@@ -500,9 +501,10 @@ def test_approach_runs_only_cheap_vision_and_keeps_the_other_rows(
     assert text.count("| cheap vision | digital PDF | synthetic |") == 1
     assert "gpt-4.1-2025-04-14 (strong vision)" in text
     assert (
-        "gpt-4.1-mini-2025-04-14 (single-call baseline, cheap vision, "
-        "text layer + text model)"
+        "gpt-4.1-mini-2025-04-14 (single-call baseline, text layer + text model)"
     ) in text
+    assert "gpt-6-luna (cheap vision, run " in text
+    assert "reasoning effort none, Responses API)" in text
     captured = capsys.readouterr()
     assert "cheap vision: synthetic-001 (1/1)" in captured.out
     assert "strong vision:" not in captured.out

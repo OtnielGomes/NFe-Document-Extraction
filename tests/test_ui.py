@@ -47,7 +47,7 @@ _TODAY = date(2026, 10, 6)
 _SYNTHETIC = Path("data/synthetic")
 _IP = "198.51.100.10"
 _HEIC = b"\x00\x00\x00\x18ftypheic\x00\x00\x00\x00"
-# 1_250_000 output tokens at the cheap-vision price is US$ 2.00.
+# 1_250_000 output tokens at the cheap-vision price is US$ 0.625.
 _OVER_CAP_OUTPUT_TOKENS = 1_250_000
 
 

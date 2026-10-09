@@ -35,7 +35,7 @@ from nfe_document_extraction.domain import Extraction
 
 _TODAY = date(2026, 10, 5)
 _IP = "198.51.100.10"
-# 1_250_000 output tokens * $1.60 / 1_000_000 = $2.00 in agents/models.json.
+# 1_250_000 output tokens * $0.50 / 1_000_000 = $0.625, above the US$ 0.50 cap.
 _OVER_CAP_OUTPUT_TOKENS = 1_250_000
 _JPEG = b"\xff\xd8\xff\xd9"
 _PNG = b"\x89PNG\r\n\x1a\n"
@@ -461,7 +461,7 @@ def test_estimated_spend_from_the_pricing_table_stops_the_next_upload() -> None:
         second = _upload(client, _pdf(1), "invoice.pdf", "application/pdf")
 
     assert first.status_code == 200
-    assert Decimal(str(monitor.extractions[0].metadata["cost_usd"])) == Decimal(2)
+    assert Decimal(str(monitor.extractions[0].metadata["cost_usd"])) == Decimal("0.625")
     assert second.status_code == 429
     assert second.json()["detail"] == (
         "The demo has reached its daily spend limit. Try again tomorrow."
