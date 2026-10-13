@@ -9,7 +9,7 @@ O modelo lê um DANFE. O código decide se essa leitura pode ser confiada. Agent
 
 ## Resultados
 
-Amostra de 10 notas sintéticas por linha (`synthetic-001` a `synthetic-010`), PDF digital e depois foto simulada. A visão barata adotada é `gpt-6-luna` (Responses API, reasoning effort none, temperature 0) com os prompts estruturados de cabeçalho e de itens ([ADR 0008](docs/adr/0008-cheap-vision-adopts-gpt-6-luna.md)). Data da tabela de preços: 2026-10-08. A tabela gerada completa, incluindo visão forte e camada de texto, está em [`docs/results.md`](docs/results.md).
+Amostra de 10 notas sintéticas por linha (`synthetic-001` a `synthetic-010`), PDF digital e depois foto simulada. A visão barata adotada é `gpt-6-luna` (Responses API, reasoning effort none) com os prompts estruturados de cabeçalho e de itens ([ADR 0008](docs/adr/0008-cheap-vision-adopts-gpt-6-luna.md)). Data da tabela de preços: 2026-10-08. A tabela gerada completa, incluindo visão forte e camada de texto, está em [`docs/results.md`](docs/results.md).
 
 | Abordagem de extração | Rendição | Acurácia de campos | Custo por nota (USD) | Erros que chegam à revisão humana | Taxa de detecção de erro plantado |
 | --- | --- | --- | --- | --- | --- |

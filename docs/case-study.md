@@ -33,7 +33,7 @@ Pinned models (`src/nfe_document_extraction/agents/models.json`, pricing as of 2
 | Extraction approach | Model |
 | --- | --- |
 | single-call baseline | `gpt-4.1-mini-2025-04-14` |
-| cheap vision | `gpt-6-luna` (Responses API, reasoning effort none, temperature 0) |
+| cheap vision | `gpt-6-luna` (Responses API, reasoning effort none) |
 | strong vision | `gpt-4.1-2025-04-14` |
 | text layer + text model | `gpt-4.1-mini-2025-04-14` |
 

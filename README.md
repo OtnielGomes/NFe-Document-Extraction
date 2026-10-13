@@ -9,7 +9,7 @@ The model reads a Brazilian DANFE. The code decides whether that reading can be 
 
 ## Results
 
-Sample of 10 synthetic invoices per row (`synthetic-001` through `synthetic-010`), digital PDF then simulated photo. Adopted cheap vision is `gpt-6-luna` (Responses API, reasoning effort none, temperature 0) with the structured Header and Line items prompts ([ADR 0008](docs/adr/0008-cheap-vision-adopts-gpt-6-luna.md)). Pricing table date: 2026-10-08. The full generated table, including strong vision and the text layer, is in [`docs/results.md`](docs/results.md).
+Sample of 10 synthetic invoices per row (`synthetic-001` through `synthetic-010`), digital PDF then simulated photo. Adopted cheap vision is `gpt-6-luna` (Responses API, reasoning effort none) with the structured Header and Line items prompts ([ADR 0008](docs/adr/0008-cheap-vision-adopts-gpt-6-luna.md)). Pricing table date: 2026-10-08. The full generated table, including strong vision and the text layer, is in [`docs/results.md`](docs/results.md).
 
 | Extraction approach | Rendition | Field accuracy | Cost per invoice (USD) | Errors reaching Human review | Planted-error detection rate |
 | --- | --- | --- | --- | --- | --- |
