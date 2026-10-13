@@ -4,6 +4,8 @@ The LLM reads the invoice. The code decides whether the reading can be trusted. 
 
 The published table is a restarted sample: 10 synthetic invoices per row (`synthetic-001` through `synthetic-010`), digital PDF then simulated photo. Phone-photo and real-invoice rows are not in that file yet. The public demo is not deployed. Evaluation, tracing, and monitoring already use LangSmith ([ADR 0003](adr/0003-local-first-eval-with-langsmith.md)). Deploy to a Hugging Face Space is described in [`deploy.md`](deploy.md) and has not run.
 
+An earlier smoke pass, kept in [`results-smoke.md`](results-smoke.md), compared the four extraction approaches and fixed the method: section agents, the deterministic validator, and cheap vision. Cheap vision on that pass still used `gpt-4.1-mini-2025-04-14` (digital field accuracy 0.9721, US$ 0.007105; simulated photo 0.5736, US$ 0.008941). The table below is the later pass, which kept that approach and adopted `gpt-6-luna`. Smoke figures are not part of the published adopted rows.
+
 ## Problem
 
 A DANFE is the printed view of a Brazilian electronic invoice (NF-e). Downstream work needs structured header fields and line items, plus an explicit statement of which fields failed a check. A model that always returns JSON can still invent a total that matches the lines, drop a row, or misread a photo. Those failures are expensive when they look valid.
