@@ -1,5 +1,10 @@
 # NFe Document Extraction
 
+[![checks](https://github.com/OtnielGomes/NFe-Document-Extraction/actions/workflows/checks.yml/badge.svg)](https://github.com/OtnielGomes/NFe-Document-Extraction/actions/workflows/checks.yml)
+![Python 3.12+](https://img.shields.io/badge/python-3.12%2B-3776AB)
+[![MIT](https://img.shields.io/badge/license-MIT-green)](LICENSE)
+[![LangSmith](https://img.shields.io/badge/LangSmith-eval%20%C2%B7%20tracing%20%C2%B7%20monitoring-1C3C3C)](https://docs.smith.langchain.com/)
+
 **English** · [Português](README.pt-BR.md)
 
 The model reads a Brazilian DANFE. The code decides whether that reading can be trusted. Header and line-item agents extract the invoice; a deterministic validator, one repair attempt, and human review accept or hold each field.

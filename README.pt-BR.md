@@ -1,5 +1,10 @@
 # Extração de documentos de NF-e
 
+[![checagens](https://github.com/OtnielGomes/NFe-Document-Extraction/actions/workflows/checks.yml/badge.svg)](https://github.com/OtnielGomes/NFe-Document-Extraction/actions/workflows/checks.yml)
+![Python 3.12+](https://img.shields.io/badge/python-3.12%2B-3776AB)
+[![MIT](https://img.shields.io/badge/license-MIT-green)](LICENSE)
+[![LangSmith: avaliação, tracing e monitoramento](https://img.shields.io/badge/LangSmith-eval%20%C2%B7%20tracing%20%C2%B7%20monitoring-1C3C3C)](https://docs.smith.langchain.com/)
+
 [English](README.md) · **Português**
 
 O modelo lê um DANFE. O código decide se essa leitura pode ser confiada. Agentes de cabeçalho e de itens extraem a nota; um validador determinístico, uma tentativa de reparo e a revisão humana aceitam ou retêm cada campo.
