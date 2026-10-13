@@ -13,3 +13,14 @@ dist/
 
 # Author invoices. The Real set is never committed.
 data/real/
+
+# Agent / Cursor tooling and local domain docs (not shared via git).
+.agents/
+.cursor/
+docs/adr/
+docs/agents/
+AGENTS.md
+CLAUDE.md
+GLOSSARY.md
+GLOSSARY-MAP.md
+skills-lock.json

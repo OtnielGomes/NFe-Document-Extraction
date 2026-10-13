@@ -1,15 +1,26 @@
 .git
 .venv
-.agents
-.cursor
 .pytest_cache
 .mypy_cache
 .ruff_cache
 .coverage
 htmlcov
 tests
-docs
 data/real
 **/__pycache__
 **/.env
+
+# Agent / Cursor tooling and local domain docs (not baked into images).
+.agents
+.cursor
+docs/adr
+docs/agents
+AGENTS.md
+CLAUDE.md
+GLOSSARY.md
+GLOSSARY-MAP.md
+skills-lock.json
+
+# Other docs and markdown (not required by the runtime image).
+docs
 *.md
