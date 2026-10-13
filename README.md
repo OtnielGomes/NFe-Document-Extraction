@@ -5,6 +5,10 @@
 [![MIT](https://img.shields.io/badge/license-MIT-green)](LICENSE)
 [![LangSmith](https://img.shields.io/badge/LangSmith-eval%20%C2%B7%20tracing%20%C2%B7%20monitoring-1C3C3C)](https://docs.smith.langchain.com/)
 
+[![LangGraph](https://img.shields.io/badge/LangGraph-1.2%2B-1C3C3C)](https://langchain-ai.github.io/langgraph/)
+[![OpenAI](https://img.shields.io/badge/OpenAI-GPT-412991)](https://platform.openai.com/docs)
+[![Docker](https://img.shields.io/badge/Docker-Space-2496ED)](Dockerfile)
+
 **English** · [Português](README.pt-BR.md)
 
 The model reads a Brazilian DANFE. The code decides whether that reading can be trusted. Header and line-item agents extract the invoice; a deterministic validator, one repair attempt, and human review accept or hold each field.

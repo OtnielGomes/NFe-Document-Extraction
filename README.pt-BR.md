@@ -5,6 +5,10 @@
 [![MIT](https://img.shields.io/badge/license-MIT-green)](LICENSE)
 [![LangSmith: avaliação, tracing e monitoramento](https://img.shields.io/badge/LangSmith-eval%20%C2%B7%20tracing%20%C2%B7%20monitoring-1C3C3C)](https://docs.smith.langchain.com/)
 
+[![LangGraph](https://img.shields.io/badge/LangGraph-1.2%2B-1C3C3C)](https://langchain-ai.github.io/langgraph/)
+[![OpenAI: modelos GPT](https://img.shields.io/badge/OpenAI-GPT-412991)](https://platform.openai.com/docs)
+[![Docker do Space](https://img.shields.io/badge/Docker-Space-2496ED)](Dockerfile)
+
 [English](README.md) · **Português**
 
 O modelo lê um DANFE. O código decide se essa leitura pode ser confiada. Agentes de cabeçalho e de itens extraem a nota; um validador determinístico, uma tentativa de reparo e a revisão humana aceitam ou retêm cada campo.
